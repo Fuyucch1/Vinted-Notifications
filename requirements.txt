@@ -1,0 +1,3 @@
+pyVinted>=0.4.10
+python-telegram-bot>=21.6
+requests
