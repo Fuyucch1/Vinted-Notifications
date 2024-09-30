@@ -5,7 +5,7 @@
 - [Introduction](#Introduction)
 - [How to install](#How-to-install)
 - [How to use](#How-to-Use)
-- [Aknowledgements](#Aknowledgements)
+- [Acknowledgements](#Acknowledgements)
 
 ## Introduction
 
@@ -49,6 +49,6 @@ After starting the bot, you can use the following commands on Telegram :
 `/keywords` - Get all keywords\
 `/hello` - Check if the bot is working
 
-## Aknowledgements
+## Acknowledgements
 
 Thanks to [@herissondev](https://github.com/herissondev) for maintaining pyVinted, a core dependancy of this project.
