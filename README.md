@@ -47,7 +47,7 @@ After starting the bot, you can use the following commands on Telegram :
 `/remove keyword` - Removes a keyword from the list\
 `/remove all` - Removes all keywords\
 `/keywords` - Get all keywords\
-`/hello` - Check if the bot is working\
+`/hello` - Check if the bot is working
 
 ## Aknowledgements
 
