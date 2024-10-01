@@ -15,11 +15,7 @@ This bot allows you to look for multiple items at the same time and to be notifi
 
 Project was made with Python 3.11.
 
-1. Clone the project
-
-```
-git clone https://github.com/Fuyucch1/Vinted-Notifications.git
-```
+1. Download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and extract it.
 
 2. Install the dependencies with pip
 

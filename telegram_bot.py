@@ -124,6 +124,9 @@ async def check_version(context: ContextTypes.DEFAULT_TYPE):
         else:
             print("You have the latest version!")
 
+async def clean_db(context: ContextTypes.DEFAULT_TYPE):
+    db.clean_db()
+
 if not os.path.exists("vinted.db"):
     db.create_sqlite_db()
 
@@ -136,7 +139,11 @@ app.add_handler(CommandHandler("remove", remove))
 app.add_handler(CommandHandler("keywords", keywords))
 
 job_queue = app.job_queue
+# Every minute we check for new listings
 job_queue.run_repeating(background_worker, interval=60, first=1)
+# Every day we check for a new version
 job_queue.run_repeating(check_version, interval=86400, first=1)
+# Every day we clean the db
+job_queue.run_repeating(clean_db, interval=86400, first=1)
 
 app.run_polling()

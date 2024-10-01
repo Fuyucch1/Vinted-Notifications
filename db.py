@@ -46,7 +46,33 @@ def add_item_to_db(id, keyword):
             conn.close()
 
 
-# TODO : Function to prune the db (update db to id + keyword and keep the last 20 per keyword)
+def clean_db():
+    conn = None
+    # We clean the db by doing two processes :
+    # First, we remove all the items that are too old (we keep the last 20 per keyword)
+    # Then, we remove all lines in the items table that do not match any keyword in the keywords table
+    # This should lead to no deletion, but let's keep it safe
+
+    # Get all the keywords
+    keywords = get_keywords()
+    # For each keyword we keep the last 20 items
+    for keyword in keywords:
+        conn = sqlite3.connect("vinted.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT item FROM items WHERE keyword=? ORDER BY ROWID DESC LIMIT -1 OFFSET 20", (keyword[0],))
+        items = cursor.fetchall()
+        for item in items:
+            cursor.execute("DELETE FROM items WHERE item=?", (item[0],))
+            conn.commit()
+        conn.close()
+
+    # Remove all items that do not match any keyword
+    conn = sqlite3.connect("vinted.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM items WHERE keyword NOT IN (SELECT keyword FROM keywords)")
+    conn.commit()
+    conn.close()
+
 
 def get_keywords():
     conn = None
@@ -111,6 +137,7 @@ def remove_all_keywords_from_db():
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM keywords")
+        cursor.execute("DELETE FROM items")
         conn.commit()
     except Exception:
         print_exc()
