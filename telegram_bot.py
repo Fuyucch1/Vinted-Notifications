@@ -56,7 +56,7 @@ async def keywords(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_new_post(content, image):
     async with bot:
-        await bot.send_message(configuration_values.CHAT_ID, content, read_timeout=10)
+        await bot.send_message(configuration_values.CHAT_ID, content, read_timeout=10, write_timeout=10)
     if image is not None:
         try:
             async with bot:
