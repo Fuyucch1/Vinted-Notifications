@@ -4,7 +4,7 @@ import db, os, configuration_values, requests
 from pyVinted import Vinted
 from traceback import print_exc
 
-VER = "0.2.1"
+VER = "0.2.2"
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -65,51 +65,52 @@ async def send_new_post(content, image):
             print_exc()
 
 
-async def process_item(keyword):
+async def process_items():
+    keywords = db.get_keywords()
     vinted = Vinted()
-    URL = configuration_values.VINTED_URL.format(keyword=keyword[0])
-    already_processed = keyword[1]
-    data = vinted.items.search(URL)
+    # for each keyword we parse data
+    for keyword in keywords:
+        URL = configuration_values.VINTED_URL.format(keyword=keyword[0]).replace(" ", "%20")
 
-    for item in data:
-        # Parse pictures, if there is no picture we put to None
-        if item.photo is not None:
-            # Sometimes this bugs out, dunno why, so we put it in a try except
-            try:
-                image = item.photo
-            except:
-                image = None
-        # Get the id of the item to check if it is already in the db
-        id = item.id
+        already_processed = keyword[1]
+        data = vinted.items.search(URL)
 
-        # Process the item if it's not in the db
-        if db.is_item_in_db(id) == 0:
-            content = configuration_values.MESSAGE.format(
-                title=item.title,
-                price=str(item.price) + " €",
-                brand=item.brand_title,
-                url=item.url
-            )
-            # Send notification
-            if already_processed == 1:
-                await send_new_post(content, image)
-            # Add the item to the db
-            db.add_item_to_db(id, keyword[0])
-        else:
-            pass
-    # Update processed value to start notifying
-    db.update_keyword_processed(keyword[0])
+        for item in data:
+
+            # Parse pictures, if there is no picture we put to None
+            if item.photo is not None:
+                # Sometimes this bugs out, dunno why, so we put it in a try except
+                try:
+                    image = item.photo
+                except:
+                    image = None
+
+            # Get the id of the item to check if it is already in the db
+            id = item.id
+
+            # Process the item if it's not in the db
+            if db.is_item_in_db(id) == 0:
+                content = configuration_values.MESSAGE.format(
+                    title=item.title,
+                    price=str(item.price) + " €",
+                    brand=item.brand_title,
+                    url=item.url
+                )
+                # Send notification
+                if already_processed == 1:
+                    await send_new_post(content, image)
+                # Add the item to the db
+                db.add_item_to_db(id, keyword[0])
+            else:
+                pass
+        # Update processed value to start notifying
+        db.update_keyword_processed(keyword[0])
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
     # TODO : Lock while working
-    # We verify that the db exists, if not we create it
     try:
-        # get the keywords
-        keywords = db.get_keywords()
-        # for each keyword we update the data
-        for keyword in keywords:
-            await process_item(keyword)
+        await process_items()
     except Exception:
         print_exc()
 
