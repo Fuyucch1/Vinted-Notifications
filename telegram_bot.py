@@ -4,7 +4,7 @@ import db, os, configuration_values, requests
 from pyVinted import Vinted
 from traceback import print_exc
 
-VER = "0.1.1"
+VER = "0.2.0"
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

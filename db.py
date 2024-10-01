@@ -49,17 +49,17 @@ def add_item_to_db(id, keyword):
 def clean_db():
     conn = None
     # We clean the db by doing two processes :
-    # First, we remove all the items that are too old (we keep the last 20 per keyword)
+    # First, we remove all the items that are too old (we keep the last 50 per keyword)
     # Then, we remove all lines in the items table that do not match any keyword in the keywords table
     # This should lead to no deletion, but let's keep it safe
 
     # Get all the keywords
     keywords = get_keywords()
-    # For each keyword we keep the last 20 items
+    # For each keyword we keep the last 50 items
     for keyword in keywords:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT item FROM items WHERE keyword=? ORDER BY ROWID DESC LIMIT -1 OFFSET 20", (keyword[0],))
+        cursor.execute("SELECT item FROM items WHERE keyword=? ORDER BY ROWID DESC LIMIT -1 OFFSET 50", (keyword[0],))
         items = cursor.fetchall()
         for item in items:
             cursor.execute("DELETE FROM items WHERE item=?", (item[0],))
