@@ -4,7 +4,7 @@ import db, os, configuration_values, requests
 from pyVinted import Vinted
 from traceback import print_exc
 
-VER = "0.2.0"
+VER = "0.2.1"
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -56,11 +56,11 @@ async def keywords(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_new_post(content, image):
     async with bot:
-        await bot.send_message(configuration_values.CHAT_ID, content)
+        await bot.send_message(configuration_values.CHAT_ID, content, read_timeout=10)
     if image is not None:
         try:
             async with bot:
-                await bot.send_photo(configuration_values.CHAT_ID, image)
+                await bot.send_photo(configuration_values.CHAT_ID, image, read_timeout=10)
         except Exception:
             print_exc()
 
