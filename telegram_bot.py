@@ -1,10 +1,10 @@
 from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import db, os, configuration_values
+import db, os, configuration_values, requests
 from pyVinted import Vinted
 from traceback import print_exc
 
-VER = "0.1.0"
+VER = "0.1.1"
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -56,11 +56,12 @@ async def keywords(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def send_new_post(content, image):
     async with bot:
         await bot.send_message(configuration_values.CHAT_ID, content)
-    try:
-        async with bot:
-            await bot.send_photo(configuration_values.CHAT_ID, image)
-    except Exception:
-        print_exc()
+    if image is not None:
+        try:
+            async with bot:
+                await bot.send_photo(configuration_values.CHAT_ID, image)
+        except Exception:
+            print_exc()
 
 
 async def process_item(keyword):
@@ -71,10 +72,12 @@ async def process_item(keyword):
 
     for item in data:
         # Parse pictures, if there is no picture we put to None
-        try:
-            image = item.photo
-        except:
-            image = None
+        if item.photo is not None:
+            # Sometimes this bugs out, dunno why, so we put it in a try except
+            try:
+                image = item.photo
+            except:
+                image = None
         # Get the id of the item to check if it is already in the db
         id = item.id
 
@@ -109,6 +112,16 @@ async def background_worker(context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         print_exc()
 
+async def check_version(context: ContextTypes.DEFAULT_TYPE):
+    # get latest version from the repository
+    url = f"https://github.com/Fuyucch1/Vinted-Notifications/releases/latest"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        if VER != response.url.split('/')[-1]:
+            await send_new_post("A new version is available, please update the bot.", None)
+        else:
+            print("You have the latest version!")
 
 if not os.path.exists("vinted.db"):
     db.create_sqlite_db()
@@ -123,5 +136,6 @@ app.add_handler(CommandHandler("keywords", keywords))
 
 job_queue = app.job_queue
 job_queue.run_repeating(background_worker, interval=60, first=1)
+job_queue.run_repeating(check_version, interval=86400, first=1)
 
 app.run_polling()
