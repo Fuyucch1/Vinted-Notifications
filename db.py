@@ -7,7 +7,7 @@ def create_sqlite_db():
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE items (item NUMERIC)")
+        cursor.execute("CREATE TABLE items (item NUMERIC, keyword TEXT)")
         cursor.execute("CREATE TABLE keywords (keyword TEXT, already_processed NUMERIC DEFAULT 0)")
         conn.commit()
     except Exception:
@@ -31,12 +31,13 @@ def is_item_in_db(id):
             conn.close()
 
 
-def add_item_to_db(id):
+def add_item_to_db(id, keyword):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO items VALUES (?)", (id,))
+        # Insert into db the id and the keyword related to the item
+        cursor.execute("INSERT INTO items VALUES (?, ?)", (id, keyword))
         conn.commit()
     except Exception:
         print_exc()
@@ -95,6 +96,7 @@ def remove_keyword_from_db(keyword):
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM keywords WHERE keyword=?", (keyword,))
+        cursor.execute("DELETE FROM items WHERE keyword=?", (keyword,))
         conn.commit()
     except Exception:
         print_exc()

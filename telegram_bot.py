@@ -43,6 +43,7 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if db.is_keyword_in_db(keyword) == 0:
         await update.message.reply_text(f'Keyword "{keyword}" does not exist')
     else:
+        db.remove_keyword_from_db(keyword)
         keyword_list = (", ").join([i[0] for i in db.get_keywords()])
         await update.message.reply_text(f'Keyword "{keyword}" removed. \nCurrent keywords: {keyword_list}')
 
@@ -93,7 +94,7 @@ async def process_item(keyword):
             if already_processed == 1:
                 await send_new_post(content, image)
             # Add the item to the db
-            db.add_item_to_db(id)
+            db.add_item_to_db(id, keyword[0])
         else:
             pass
     # Update processed value to start notifying
