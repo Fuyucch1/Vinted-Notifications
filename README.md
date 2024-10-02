@@ -39,11 +39,17 @@ python telegram_bot.py
 
 After starting the bot, you can use the following commands on Telegram :
 
-`/add keyword` - Adds a keyword to look for\
-`/remove keyword` - Removes a keyword from the list\
-`/remove all` - Removes all keywords\
+`/add_keyword keyword` - Adds a keyword to look for\
+`/remove_keyword keyword` - Removes a keyword from the list\
+`/remove_keyword all` - Removes all keywords\
 `/keywords` - Get all keywords\
-`/hello` - Check if the bot is working
+`/hello` - Check if the bot is working\
+`/create_allowlist` - Creates an allowlist of country of origin\
+`/delete_allowlist` - Deletes the allowlist\
+`/add_country XX` - Adds a country to the allowlist. Country must follow ISO3166 standard\
+`/remove_country XX` - Removes a country from the allowlist\
+`/allowlist` - Get the allowlist
+
 
 ## Acknowledgements
 

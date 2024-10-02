@@ -158,3 +158,69 @@ def update_keyword_processed(keyword):
     finally:
         if conn:
             conn.close()
+
+def create_allowlist():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted.db")
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE allowlist (country TEXT)")
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def add_to_allowlist(country):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO allowlist VALUES (?)", (country,))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def remove_from_allowlist(country):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted.db")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM allowlist WHERE country=?", (country,))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+def get_allowlist():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM allowlist")
+        # return list of countries
+        return [country[0] for country in cursor.fetchall()]
+    except Exception:
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
+def delete_allowlist():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted.db")
+        cursor = conn.cursor()
+        cursor.execute("DROP TABLE IF EXISTS allowlist")
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()

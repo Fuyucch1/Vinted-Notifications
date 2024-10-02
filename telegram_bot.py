@@ -1,10 +1,11 @@
 from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
-from pyVinted import Vinted
+from pyVinted import Vinted, requester
 from traceback import print_exc
+from time import sleep
 
-VER = "0.2.2"
+VER = "0.3.0"
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -12,7 +13,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # add a keyword to the db
-async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def add_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyword = context.args
     if not keyword:
         await update.message.reply_text('No keyword provided')
@@ -30,7 +31,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # remove a keyword from the db
-async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def remove_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyword = context.args
     if not keyword:
         await update.message.reply_text('No keyword provided')
@@ -55,6 +56,51 @@ async def keywords(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Current keywords: \n{keyword_list}')
 
 
+async def create_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    db.create_allowlist()
+    await update.message.reply_text(f'Allowlist created. Add countries by using /add_country "FR,BE,ES,IT,LU,DE etc."')
+
+async def delete_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    db.delete_allowlist()
+    await update.message.reply_text(f'Allowlist deleted. All countries are allowed.')
+
+async def add_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    country = context.args
+    if not country:
+        await update.message.reply_text('No country provided')
+        return
+    # remove spaces
+    country = ' '.join(country).replace(" ", "")
+    if len(country) != 2:
+        a = len(country)
+        await update.message.reply_text('Invalid country code')
+        return
+    # if already in allowlist
+    if country.upper() in (list := db.get_allowlist()):
+        await update.message.reply_text(f'Country "{country.upper()}" already in allowlist. Current allowlist: {list}')
+    else:
+        db.add_to_allowlist(country.upper())
+        await update.message.reply_text(f'Done. Current allowlist: {db.get_allowlist()}')
+
+async def remove_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    country = context.args
+    if not country:
+        await update.message.reply_text('No country provided')
+        return
+    # remove spaces
+    country = ' '.join(country).replace(" ", "")
+    if len(country) != 2:
+        await update.message.reply_text('Invalid country code')
+        return
+    db.remove_from_allowlist(country.upper())
+    await update.message.reply_text(f'Done. Current allowlist: {db.get_allowlist()}')
+
+async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if db.get_allowlist() == 0:
+        await update.message.reply_text(f'No allowlist set. All countries are allowed.')
+    else:
+        await update.message.reply_text(f'Current allowlist: {db.get_allowlist()}')
+
 async def send_new_post(content, image):
     async with bot:
         await bot.send_message(configuration_values.CHAT_ID, content, read_timeout=10, write_timeout=10)
@@ -64,6 +110,22 @@ async def send_new_post(content, image):
                 await bot.send_photo(configuration_values.CHAT_ID, image, read_timeout=10)
         except Exception:
             print_exc()
+
+
+def get_user_country(profile_id):
+    url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
+    response = requester.get(url)
+    response.raise_for_status()
+    user_country = response.json()["user"]["country_iso_code"]
+    # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
+    if response.status_code == 429:
+        print("Too many requests, waiting a bit and retrying...")
+        sleep(2)
+        response = requester.get(url)
+        response.raise_for_status()
+        user_country = response.json()["user"]["country_iso_code"]
+    # If we can't get the country for whatever reason, we return "XX" as a default, so the item gets notified anyway
+    return user_country or "XX"
 
 
 async def process_items():
@@ -78,34 +140,44 @@ async def process_items():
 
         for item in data:
 
-            # Parse pictures, if there is no picture we put to None
-            if item.photo is not None:
-                # Sometimes this bugs out, dunno why, so we put it in a try except
-                try:
-                    image = item.photo
-                except:
-                    image = None
-
             # Get the id of the item to check if it is already in the db
             id = item.id
 
-            # Process the item if it's not in the db
-            if db.is_item_in_db(id) == 0:
+            # If already in db, pass
+            if db.is_item_in_db(id) != 0:
+                pass
+            # If it's the first run, we add the item to the db and do nothing else
+            elif already_processed == 0:
+                db.add_item_to_db(id, keyword[0])
+                pass
+            # If there's an allowlist and
+            # If the user's country is not in the allowlist, we add it to the db and do nothing else
+            elif db.get_allowlist() != 0 and (user_country := get_user_country(item.raw_data["user"]["id"])) not in (list := db.get_allowlist()+["XX"]):
+                db.add_item_to_db(id, keyword[0])
+                pass
+            else :
+                # Parse pictures, if there is no picture we put to None
+                if item.photo is not None:
+                    # Sometimes this bugs out, dunno why, so we put it in a try except
+                    try:
+                        image = item.photo
+                    except:
+                        image = None
+
+                # We create the message
                 content = configuration_values.MESSAGE.format(
                     title=item.title,
                     price=str(item.price) + " €",
                     brand=item.brand_title,
                     url=item.url
                 )
-                # Send notification
-                if already_processed == 1:
-                    await send_new_post(content, image)
+                await send_new_post(content, image)
                 # Add the item to the db
                 db.add_item_to_db(id, keyword[0])
-            else:
-                pass
         # Update processed value to start notifying
         db.update_keyword_processed(keyword[0])
+
+
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
@@ -135,10 +207,18 @@ if not os.path.exists("vinted.db"):
 bot = Bot(configuration_values.TOKEN)
 app = ApplicationBuilder().token(configuration_values.TOKEN).build()
 
+# Handler verify if bot is running
 app.add_handler(CommandHandler("hello", hello))
-app.add_handler(CommandHandler("add", add))
-app.add_handler(CommandHandler("remove", remove))
+# Keyword handlers
+app.add_handler(CommandHandler("add_keyword", add_keyword))
+app.add_handler(CommandHandler("remove_keyword", remove_keyword))
 app.add_handler(CommandHandler("keywords", keywords))
+# Allowlist handlers
+app.add_handler(CommandHandler("create_allowlist", create_allowlist))
+app.add_handler(CommandHandler("delete_allowlist", delete_allowlist))
+app.add_handler(CommandHandler("add_country", add_country))
+app.add_handler(CommandHandler("remove_country", remove_country))
+app.add_handler(CommandHandler("allowlist", allowlist))
 
 job_queue = app.job_queue
 # Every minute we check for new listings

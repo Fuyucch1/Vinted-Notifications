@@ -11,4 +11,5 @@ MESSAGE = '''\
 '''
 
 #### VINTED URL ####
-VINTED_URL = "https://www.vinted.fr/catalog?search_text={keyword}&order=newest_first"
+VINTED_BASE_URL = "https://www.vinted.fr" # Edit this value to your country's Vinted !!
+VINTED_URL = VINTED_BASE_URL + "/catalog?search_text={keyword}&order=newest_first"
