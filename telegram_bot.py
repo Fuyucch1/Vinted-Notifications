@@ -18,15 +18,15 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text('No keyword provided')
         return
     # merge keyword list into a string
-    keyword = ' '.join(keyword)
+    keyword = ' '.join(keyword).lower()
     if db.is_keyword_in_db(keyword) >= 1:
         await update.message.reply_text(f'Keyword "{keyword}" already exists')
     else:
         # add the keyword to the db
         db.add_keyword_to_db(keyword)
         # Create a string with all the keywords
-        keyword_list = (", ").join([i[0] for i in db.get_keywords()])
-        await update.message.reply_text(f'Keyword "{keyword}" added. \nCurrent keywords: {keyword_list}')
+        keyword_list = ("\n").join([str(i+1)+". " + j[0] for i,j in enumerate(db.get_keywords())])
+        await update.message.reply_text(f'Keyword "{keyword}" added. \nCurrent keywords: \n{keyword_list}')
 
 
 # remove a keyword from the db
@@ -35,7 +35,7 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not keyword:
         await update.message.reply_text('No keyword provided')
         return
-    keyword = ' '.join(keyword)
+    keyword = ' '.join(keyword).lower()
     if keyword == "all":
         db.remove_all_keywords_from_db()
         await update.message.reply_text(f'All keywords removed')
@@ -44,14 +44,15 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f'Keyword "{keyword}" does not exist')
     else:
         db.remove_keyword_from_db(keyword)
-        keyword_list = (", ").join([i[0] for i in db.get_keywords()])
-        await update.message.reply_text(f'Keyword "{keyword}" removed. \nCurrent keywords: {keyword_list}')
+        # We'll write the keyword lis this way : 1. keyword\n2. keyword\n3. keyword
+        keyword_list = ("\n").join([str(i+1)+". " + j[0] for i,j in enumerate(db.get_keywords())])
+        await update.message.reply_text(f'Keyword "{keyword}" removed. \nCurrent keywords: \n{keyword_list}')
 
 
 # get all keywords from the db
 async def keywords(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyword_list = (", ").join([i[0] for i in db.get_keywords()])
-    await update.message.reply_text(f'Current keywords: {keyword_list}')
+    keyword_list = ("\n").join([str(i+1)+". " + j[0] for i,j in enumerate(db.get_keywords())])
+    await update.message.reply_text(f'Current keywords: \n{keyword_list}')
 
 
 async def send_new_post(content, image):
