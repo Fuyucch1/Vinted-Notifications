@@ -5,7 +5,7 @@ from pyVinted import Vinted, requester
 from traceback import print_exc
 from time import sleep
 
-VER = "0.3.0"
+VER = "0.4.0"
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -112,11 +112,13 @@ async def send_new_post(content, image):
             print_exc()
 
 
-def get_user_country(profile_id):
+def get_user_country(profile_id, item_id):
     url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
     response = requester.get(url)
     response.raise_for_status()
     user_country = response.json()["user"]["country_iso_code"]
+    #user_country = response.json()["items"]["0"]["user"]["country"]
+    #item_string = response.json()["items"]["0"]["title"] + " " + response.json()["items"]["0"]["description"]
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
     if response.status_code == 429:
         print("Too many requests, waiting a bit and retrying...")
@@ -124,8 +126,10 @@ def get_user_country(profile_id):
         response = requester.get(url)
         response.raise_for_status()
         user_country = response.json()["user"]["country_iso_code"]
+        # user_country = response.json()["items"]["0"]["user"]["country"]
+        #item_string = response.json()["items"]["0"]["title"] + " " + response.json()["items"]["0"]["description"]
     # If we can't get the country for whatever reason, we return "XX" as a default, so the item gets notified anyway
-    return user_country or "XX"
+    return user_country or "XX" #, item_string or "XX"
 
 
 async def process_items():
@@ -151,8 +155,11 @@ async def process_items():
                 db.add_item_to_db(id, keyword[0])
                 pass
             # If there's an allowlist and
-            # If the user's country is not in the allowlist, we add it to the db and do nothing else
-            elif db.get_allowlist() != 0 and (user_country := get_user_country(item.raw_data["user"]["id"])) not in (list := db.get_allowlist()+["XX"]):
+            # If the user's country is not in the allowlist and
+            # If there's any word of the keyword that's not in the item listing, we add it to the db and do nothing else
+            elif db.get_allowlist() != 0 and (listing_infos := get_user_country(item.raw_data["user"]["id"], id)) not in (db.get_allowlist()+["XX"]):
+                #                                                                                              ^^^^ we should add a [0] here
+                # and write stm such as "or not all(word in listing_infos[1] for word in keyword[0].split())
                 db.add_item_to_db(id, keyword[0])
                 pass
             else :
@@ -195,8 +202,6 @@ async def check_version(context: ContextTypes.DEFAULT_TYPE):
     if response.status_code == 200:
         if VER != response.url.split('/')[-1]:
             await send_new_post("A new version is available, please update the bot.", None)
-        else:
-            print("You have the latest version!")
 
 async def clean_db(context: ContextTypes.DEFAULT_TYPE):
     db.clean_db()
@@ -222,10 +227,12 @@ app.add_handler(CommandHandler("allowlist", allowlist))
 
 job_queue = app.job_queue
 # Every minute we check for new listings
-job_queue.run_repeating(background_worker, interval=60, first=1)
+job_queue.run_repeating(background_worker, interval=60, first=10)
 # Every day we check for a new version
 job_queue.run_repeating(check_version, interval=86400, first=1)
 # Every day we clean the db
 job_queue.run_repeating(clean_db, interval=86400, first=1)
+
+print("Bot started. Head to your telegram and type /hello to check if it's running.")
 
 app.run_polling()
