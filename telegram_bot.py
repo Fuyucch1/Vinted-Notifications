@@ -3,7 +3,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
 from pyVinted import Vinted, requester
 from traceback import print_exc
-from time import sleep#, time
+from time import sleep, time
 from asyncio import queues
 
 VER = "0.4.0"
@@ -109,75 +109,38 @@ async def send_new_post(content, url, text):
 
 
 def get_user_country(profile_id, item_id):
-    url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
+    url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}/items?selected_item_id={item_id}"
     response = requester.get(url)
-    response.raise_for_status()
-    user_country = response.json()["user"]["country_iso_code"]
-    #user_country = response.json()["items"]["0"]["user"]["country"]
-    #item_string = response.json()["items"]["0"]["title"] + " " + response.json()["items"]["0"]["description"]
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
     if response.status_code == 429:
         print("Too many requests, waiting a bit and retrying...")
         sleep(2)
         response = requester.get(url)
         response.raise_for_status()
-        user_country = response.json()["user"]["country_iso_code"]
         # user_country = response.json()["items"]["0"]["user"]["country"]
         #item_string = response.json()["items"]["0"]["title"] + " " + response.json()["items"]["0"]["description"]
+    #user_country = response.json()["user"]["country_iso_code"]
+    user_country = response.json()["items"][0]["user"]["country_iso_code"]
     # If we can't get the country for whatever reason, we return "XX" as a default, so the item gets notified anyway
     return user_country or "XX" #, item_string or "XX"
 
 
 async def process_items():
     # checking time spent on this
-    #print("Processing items...")
-    #start = time()
+    print("Processing items...")
+    start = time()
     keywords = db.get_keywords()
     vinted = Vinted()
     # for each keyword we parse data
     for keyword in keywords:
         URL = configuration_values.VINTED_URL.format(keyword=keyword[0]).replace(" ", "%20")
-
         already_processed = keyword[1]
         data = vinted.items.search(URL)
-
-        for item in data:
-            # Get the id of the item to check if it is already in the db
-            id = item.id
-
-            # If already in db, pass
-            if db.is_item_in_db(id) != 0:
-                pass
-            # If it's the first run, we add the item to the db and do nothing else
-            elif already_processed == 0:
-                db.add_item_to_db(id, keyword[0])
-                pass
-            # If there's an allowlist and
-            # If the user's country is not in the allowlist and
-            # If there's any word of the keyword that's not in the item listing, we add it to the db and do nothing else
-            elif db.get_allowlist() != 0 and (listing_infos := get_user_country(item.raw_data["user"]["id"], id)) not in (db.get_allowlist()+["XX"]):
-                #                                                                                              ^^^^ we should add a [0] here
-                # and write stm such as "or not all(word in listing_infos[1] for word in keyword[0].split())
-                db.add_item_to_db(id, keyword[0])
-                pass
-            else :
-                # We create the message
-                content = configuration_values.MESSAGE.format(
-                    title=item.title,
-                    price=str(item.price) + " €",
-                    brand=item.brand_title,
-                    image=None if item.photo is None else item.photo
-                )
-                # We send the message through asyncio
-                #await send_new_post(content, item.url, "Open Vinted")
-                # add the item to the queue
-                await item_queue.put((content, item.url, "Open Vinted"))
-                #print(f"New item found: {item.title}")
-                # Add the item to the db
-                db.add_item_to_db(id, keyword[0])
+        start_individual_item_processing = time()
+        await items_queue.put((data, already_processed, keyword[0]))
         # Update processed value to start notifying
         db.update_keyword_processed(keyword[0])
-    #print(f"Time spent processing items: {time()-start} seconds")
+    print(f"Time spent processing items: {time()-start} seconds")
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
@@ -199,10 +162,46 @@ async def check_version(context: ContextTypes.DEFAULT_TYPE):
 async def clean_db(context: ContextTypes.DEFAULT_TYPE):
     db.clean_db()
 
-async def clear_queue(context: ContextTypes.DEFAULT_TYPE):
+async def clear_telegram_queue(context: ContextTypes.DEFAULT_TYPE):
     while 1:
-        content, url, text = await item_queue.get()
+        content, url, text = await new_items_queue.get()
         await send_new_post(content, url, text)
+
+async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
+    while 1:
+        data, already_processed, keyword = await items_queue.get()
+        for item in data:
+            # Get the id of the item to check if it is already in the db
+            id = item.id
+
+            # If already in db, pass
+            if db.is_item_in_db(id) != 0:
+                pass
+            # If it's the first run, we add the item to the db and do nothing else
+            elif already_processed == 0:
+                db.add_item_to_db(id, keyword[0])
+                pass
+            # If there's an allowlist and
+            # If the user's country is not in the allowlist and
+            # If there's any word of the keyword that's not in the item listing, we add it to the db and do nothing else
+            elif db.get_allowlist() != 0 and (
+            listing_infos := get_user_country(item.raw_data["user"]["id"], id)) not in (db.get_allowlist() + ["XX"]):
+                #                                                                                              ^^^^ we should add a [0] here
+                # and write stm such as "or not all(word in listing_infos[1] for word in keyword[0].split())
+                db.add_item_to_db(id, keyword[0])
+                pass
+            else:
+                # We create the message
+                content = configuration_values.MESSAGE.format(
+                    title=item.title,
+                    price=str(item.price) + " €",
+                    brand=item.brand_title,
+                    image=None if item.photo is None else item.photo
+                )
+                # add the item to the queue
+                await new_items_queue.put((content, item.url, "Open Vinted"))
+                # Add the item to the db
+                db.add_item_to_db(id, keyword[0])
 
 if not os.path.exists("vinted.db"):
     db.create_sqlite_db()
@@ -210,8 +209,13 @@ if not os.path.exists("vinted.db"):
 bot = Bot(configuration_values.TOKEN)
 app = ApplicationBuilder().token(configuration_values.TOKEN).build()
 
+# Create the item queue to process
+items_queue = queues.Queue()
 # Create the item queue to send to telegram
-item_queue = queues.Queue()
+new_items_queue = queues.Queue()
+
+
+
 
 # Handler verify if bot is running
 app.add_handler(CommandHandler("hello", hello))
@@ -234,7 +238,9 @@ job_queue.run_repeating(check_version, interval=86400, first=1)
 # Every day we clean the db
 job_queue.run_repeating(clean_db, interval=86400, first=1)
 # Every second we send the posts to telegram
-job_queue.run_once(clear_queue, when=1)
+job_queue.run_once(clear_telegram_queue, when=1)
+# Every second we process the items
+job_queue.run_once(clear_item_queue, when=1)
 
 print("Bot started. Head to your telegram and type /hello to check if it's running.")
 
