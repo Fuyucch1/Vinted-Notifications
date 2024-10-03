@@ -3,7 +3,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
 from pyVinted import Vinted, requester
 from traceback import print_exc
-from time import sleep
+from time import sleep#, time
+from asyncio import queues
 
 VER = "0.4.0"
 
@@ -129,6 +130,8 @@ def get_user_country(profile_id, item_id):
 
 async def process_items():
     # checking time spent on this
+    #print("Processing items...")
+    #start = time()
     keywords = db.get_keywords()
     vinted = Vinted()
     # for each keyword we parse data
@@ -163,13 +166,18 @@ async def process_items():
                     title=item.title,
                     price=str(item.price) + " €",
                     brand=item.brand_title,
-                    image=item.photo
+                    image=None if item.photo is None else item.photo
                 )
-                await send_new_post(content, item.url, "Open in Vinted")
+                # We send the message through asyncio
+                #await send_new_post(content, item.url, "Open Vinted")
+                # add the item to the queue
+                await item_queue.put((content, item.url, "Open Vinted"))
+                #print(f"New item found: {item.title}")
                 # Add the item to the db
                 db.add_item_to_db(id, keyword[0])
         # Update processed value to start notifying
         db.update_keyword_processed(keyword[0])
+    #print(f"Time spent processing items: {time()-start} seconds")
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
@@ -191,11 +199,19 @@ async def check_version(context: ContextTypes.DEFAULT_TYPE):
 async def clean_db(context: ContextTypes.DEFAULT_TYPE):
     db.clean_db()
 
+async def clear_queue(context: ContextTypes.DEFAULT_TYPE):
+    while 1:
+        content, url, text = await item_queue.get()
+        await send_new_post(content, url, text)
+
 if not os.path.exists("vinted.db"):
     db.create_sqlite_db()
 
 bot = Bot(configuration_values.TOKEN)
 app = ApplicationBuilder().token(configuration_values.TOKEN).build()
+
+# Create the item queue to send to telegram
+item_queue = queues.Queue()
 
 # Handler verify if bot is running
 app.add_handler(CommandHandler("hello", hello))
@@ -217,6 +233,8 @@ job_queue.run_repeating(background_worker, interval=60, first=10)
 job_queue.run_repeating(check_version, interval=86400, first=1)
 # Every day we clean the db
 job_queue.run_repeating(clean_db, interval=86400, first=1)
+# Every second we send the posts to telegram
+job_queue.run_once(clear_queue, when=1)
 
 print("Bot started. Head to your telegram and type /hello to check if it's running.")
 
