@@ -5,6 +5,7 @@
 - [Introduction](#Introduction)
 - [How to install](#How-to-install)
 - [How to use](#How-to-Use)
+- [How to update](#How-to-update)
 - [Acknowledgements](#Acknowledgements)
 
 ## Introduction
@@ -50,6 +51,14 @@ After starting the bot, you can use the following commands on Telegram :
 `/remove_country XX` - Removes a country from the allowlist\
 `/allowlist` - Get the allowlist
 
+## How to update
+
+1. Download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and extract it.
+2. Replace the old files with the new ones.
+3. Don't forget to keep your tokens.
+4. You can keep your vinted.db, except if the new release specifies otherwise.
+
+This is an early stage WIP. There's no migration procedure planned between versions. I'll do it soon.
 
 ## Acknowledgements
 
