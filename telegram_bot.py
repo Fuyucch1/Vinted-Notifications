@@ -1,4 +1,4 @@
-from telegram import Update, Bot
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
 from pyVinted import Vinted, requester
@@ -101,15 +101,10 @@ async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await update.message.reply_text(f'Current allowlist: {db.get_allowlist()}')
 
-async def send_new_post(content, image):
+async def send_new_post(content, url, text):
     async with bot:
-        await bot.send_message(configuration_values.CHAT_ID, content, read_timeout=10, write_timeout=10)
-    if image is not None:
-        try:
-            async with bot:
-                await bot.send_photo(configuration_values.CHAT_ID, image, read_timeout=10)
-        except Exception:
-            print_exc()
+        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=10, write_timeout=10,
+                               reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=text, url=url)]]))
 
 
 def get_user_country(profile_id, item_id):
@@ -133,6 +128,7 @@ def get_user_country(profile_id, item_id):
 
 
 async def process_items():
+    # checking time spent on this
     keywords = db.get_keywords()
     vinted = Vinted()
     # for each keyword we parse data
@@ -143,7 +139,6 @@ async def process_items():
         data = vinted.items.search(URL)
 
         for item in data:
-
             # Get the id of the item to check if it is already in the db
             id = item.id
 
@@ -163,28 +158,18 @@ async def process_items():
                 db.add_item_to_db(id, keyword[0])
                 pass
             else :
-                # Parse pictures, if there is no picture we put to None
-                if item.photo is not None:
-                    # Sometimes this bugs out, dunno why, so we put it in a try except
-                    try:
-                        image = item.photo
-                    except:
-                        image = None
-
                 # We create the message
                 content = configuration_values.MESSAGE.format(
                     title=item.title,
                     price=str(item.price) + " €",
                     brand=item.brand_title,
-                    url=item.url
+                    image=item.photo
                 )
-                await send_new_post(content, image)
+                await send_new_post(content, item.url, "Open in Vinted")
                 # Add the item to the db
                 db.add_item_to_db(id, keyword[0])
         # Update processed value to start notifying
         db.update_keyword_processed(keyword[0])
-
-
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
@@ -201,7 +186,7 @@ async def check_version(context: ContextTypes.DEFAULT_TYPE):
 
     if response.status_code == 200:
         if VER != response.url.split('/')[-1]:
-            await send_new_post("A new version is available, please update the bot.", None)
+            await send_new_post("A new version is available, please update the bot.", url, "Open Github")
 
 async def clean_db(context: ContextTypes.DEFAULT_TYPE):
     db.clean_db()
