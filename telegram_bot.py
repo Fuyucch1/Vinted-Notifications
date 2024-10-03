@@ -3,7 +3,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
 from pyVinted import Vinted, requester
 from traceback import print_exc
-from time import sleep, time
+from time import sleep
 from asyncio import queues
 
 VER = "0.4.0"
@@ -109,7 +109,7 @@ async def send_new_post(content, url, text):
 
 
 def get_user_country(profile_id, item_id):
-    url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}/items?selected_item_id={item_id}"
+    url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
     response = requester.get(url)
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
     if response.status_code == 429:
@@ -119,16 +119,15 @@ def get_user_country(profile_id, item_id):
         response.raise_for_status()
         # user_country = response.json()["items"]["0"]["user"]["country"]
         #item_string = response.json()["items"]["0"]["title"] + " " + response.json()["items"]["0"]["description"]
-    #user_country = response.json()["user"]["country_iso_code"]
-    user_country = response.json()["items"][0]["user"]["country_iso_code"]
+    user_country = response.json()["user"]["country_iso_code"]
+    #user_country = response.json()["items"][0]["user"]["country_iso_code"]
     # If we can't get the country for whatever reason, we return "XX" as a default, so the item gets notified anyway
     return user_country or "XX" #, item_string or "XX"
 
 
+
 async def process_items():
-    # checking time spent on this
-    print("Processing items...")
-    start = time()
+
     keywords = db.get_keywords()
     vinted = Vinted()
     # for each keyword we parse data
@@ -136,11 +135,9 @@ async def process_items():
         URL = configuration_values.VINTED_URL.format(keyword=keyword[0]).replace(" ", "%20")
         already_processed = keyword[1]
         data = vinted.items.search(URL)
-        start_individual_item_processing = time()
         await items_queue.put((data, already_processed, keyword[0]))
         # Update processed value to start notifying
         db.update_keyword_processed(keyword[0])
-    print(f"Time spent processing items: {time()-start} seconds")
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
