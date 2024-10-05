@@ -6,7 +6,7 @@ from traceback import print_exc
 from time import sleep
 from asyncio import queues
 
-VER = "0.4.0"
+VER = "0.4.1"
 
 
 # verify if bot still running
@@ -16,6 +16,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # add a keyword to the db
 async def add_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
     keyword = context.args
     if not keyword:
         await update.message.reply_text('No keyword provided')
@@ -175,10 +176,10 @@ async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
         for item in data:
             # Get the id of the item to check if it is already in the db
             id = item.id
-
+            # TODO : Sort by category_id
             # If it's the first run, we add the item to the db and do nothing else
             if already_processed == 0:
-                db.add_item_to_db(id, keyword[0])
+                db.add_item_to_db(id, keyword)
                 pass
             # If already in db, pass
             elif db.is_item_in_db(id) != 0:
@@ -187,7 +188,7 @@ async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
             # If the user's country is not in the allowlist, we add it to the db and do nothing else
             elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
                     db.get_allowlist() + ["XX"]):
-                db.add_item_to_db(id, keyword[0])
+                db.add_item_to_db(id, keyword)
                 pass
             else:
                 # We create the message
@@ -200,7 +201,7 @@ async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
                 # add the item to the queue
                 await new_items_queue.put((content, item.url, "Open Vinted"))
                 # Add the item to the db
-                db.add_item_to_db(id, keyword[0])
+                db.add_item_to_db(id, keyword)
 
 async def set_commands(context: ContextTypes.DEFAULT_TYPE):
     await bot.set_my_commands([
