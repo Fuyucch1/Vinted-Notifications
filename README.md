@@ -1,5 +1,7 @@
 # Vinted-Notifications
 
+⚠️ This is an early stage WIP. Expect bugs and missing features. ⚠️
+
 ## Table of Content
 
 - [Introduction](#Introduction)
@@ -46,6 +48,7 @@ After starting the bot, you can use the following commands on Telegram :
 `/keywords` - Get all keywords\
 `/hello` - Check if the bot is working\
 `/create_allowlist` - Creates an allowlist of country of origin\
+⚠️ Be aware that creating an allowlist will slow down the bot and may cause it to get timeouts from VInted. ⚠️\
 `/delete_allowlist` - Deletes the allowlist\
 `/add_country XX` - Adds a country to the allowlist. Country must follow ISO3166 standard\
 `/remove_country XX` - Removes a country from the allowlist\

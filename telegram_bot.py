@@ -6,7 +6,7 @@ from traceback import print_exc
 from time import sleep
 from asyncio import queues
 
-VER = "0.4.1"
+VER = "0.4.2"
 
 
 # verify if bot still running
@@ -118,15 +118,28 @@ async def send_new_post(content, url, text):
 
 def get_user_country(profile_id):
     url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
+    # We're doing tons of queries, so we need to be careful with the rate limiting
+    # We should add proxies, but is that against TOS ?
+    # Let's just sleep at least 1s between each request
+    sleep(1)
     response = requester.get(url)
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
     if response.status_code == 429:
-        print("Too many requests, waiting a bit and retrying...")
+        # extract the retry-after value from the response headers
+        retry_after = response.headers["retry-after"]
+        # wait for the time specified by the retry-after value
+        print(f"Too many requests, we should wait {retry_after} seconds before retrying. However, this is not implemented yet.")
+        # Yes, because waiting a whole minute for each query is pointless
+        # We're keeping the old 2s wait just in case...
         sleep(2)
-        response = requester.get(url)
-        response.raise_for_status()
-    user_country = response.json()["user"]["country_iso_code"]
-    return user_country or "XX"
+        #sleep(int(retry_after))
+        #response = requester.get(url)
+    try:
+        user_country = response.json()["user"]["country_iso_code"]
+    except KeyError:
+        print("Couldn't get the country, too many requests. Returning default value.")
+        user_country = "XX"
+    return user_country
 
 
 async def process_items():
