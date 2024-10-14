@@ -88,13 +88,15 @@ def get_queries():
             conn.close()
 
 
-def is_query_in_db(query):
+def is_query_in_db(searched_text):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT() FROM queries WHERE query=?", (query,))
-        # TODO : extract keyword from the query and compare it to the whole strings
+        # replace spaces in searched_text by % to match any query containing the searched text
+        searched_text = searched_text.replace(' ', '%')
+
+        cursor.execute("SELECT COUNT() FROM queries WHERE query LIKE ?", ('%'+searched_text+'%',))
         if cursor.fetchone()[0]:
             return True
     except Exception:

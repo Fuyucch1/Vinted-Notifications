@@ -28,13 +28,14 @@ async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Ensure the order flag is set to newest_first
     query_params['order'] = ['newest_first']
+    searched_text = query_params.get('search_text')
 
     # Rebuild the query string and the entire URL
     new_query = urlencode(query_params, doseq=True)
     query = urlunparse(
         (parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
 
-    if db.is_query_in_db(query) is True:
+    if db.is_query_in_db(searched_text[0]) is True:
         await update.message.reply_text(f'Query already exists.')
     else:
         # add the keyword to the db
