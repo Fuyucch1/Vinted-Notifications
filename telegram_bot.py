@@ -16,7 +16,6 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # add a keyword to the db
 async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-
     query = context.args
     if not query:
         await update.message.reply_text('No query provided.')
@@ -28,6 +27,10 @@ async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Ensure the order flag is set to newest_first
     query_params['order'] = ['newest_first']
+    # Remove time and search_id if provided
+    query_params.pop('time', None)
+    query_params.pop('search_id', None)
+
     searched_text = query_params.get('search_text')
 
     # Rebuild the query string and the entire URL
@@ -72,10 +75,11 @@ async def queries(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query_list = format_queries()
     await update.message.reply_text(f'Current queries: \n{query_list}')
 
+
 def format_queries():
-    queries = db.get_queries()
+    all_queries = db.get_queries()
     queries_keywords = []
-    for query in queries:
+    for query in all_queries:
         parsed_url = urlparse(query[0])
         query_params = parse_qs(parsed_url.query)
 
@@ -85,6 +89,7 @@ def format_queries():
 
     query_list = ("\n").join([str(i + 1) + ". " + j[0] for i, j in enumerate(queries_keywords)])
     return query_list
+
 
 async def create_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     db.create_allowlist()
@@ -104,12 +109,11 @@ async def add_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     # remove spaces
     country = ' '.join(country).replace(" ", "")
     if len(country) != 2:
-        a = len(country)
         await update.message.reply_text('Invalid country code')
         return
     # if already in allowlist
-    if country.upper() in (list := db.get_allowlist()):
-        await update.message.reply_text(f'Country "{country.upper()}" already in allowlist. Current allowlist: {list}')
+    if country.upper() in (country_list := db.get_allowlist()):
+        await update.message.reply_text(f'Country "{country.upper()}" already in allowlist. Current allowlist: {country_list}')
     else:
         db.add_to_allowlist(country.upper())
         await update.message.reply_text(f'Done. Current allowlist: {db.get_allowlist()}')
@@ -144,13 +148,14 @@ async def send_new_post(content, url, text):
 
 
 def get_user_country(profile_id):
-    url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
+    # Users are shared between all Vinted platforms, so we can use any of them
+    url = f"https://www.vinted.fr/api/v2/users/{profile_id}?localize=false"
     response = requester.get(url)
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
     if response.status_code == 429:
         # In case of rate limit, we're switching the endpoint. This one is slower, but it doesn't RL as soon. 
         # We're limiting the items per page to 1 to grab as little data as possible
-        url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}/items?page=1&per_page=1"
+        url = f"https://www.vinted.fr/api/v2/users/{profile_id}/items?page=1&per_page=1"
         response = requester.get(url)
         try:
             user_country = response.json()["items"][0]["user"]["country_iso_code"]
@@ -163,10 +168,10 @@ def get_user_country(profile_id):
 
 
 async def process_items():
-    queries = db.get_queries()
+    all_queries = db.get_queries()
     vinted = Vinted()
     # for each keyword we parse data
-    for query in queries:
+    for query in all_queries:
         already_processed = query[1]
         data = vinted.items.search(query[0])
         await items_queue.put((data, already_processed, query[0]))
@@ -208,7 +213,6 @@ async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
         for item in data:
             # Get the id of the item to check if it is already in the db
             id = item.id
-            # TODO : Sort by category_id
             # If it's the first run, we add the item to the db and do nothing else
             if already_processed == 0:
                 db.add_item_to_db(id, query)
@@ -235,18 +239,19 @@ async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
                 # Add the item to the db
                 db.add_item_to_db(id, query)
 
+
 async def set_commands(context: ContextTypes.DEFAULT_TYPE):
     await bot.set_my_commands([
-            ("hello", "Verify if bot is running"),
-            ("add_query", "Add a keyword to the bot"),
-            ("remove_query", "Remove a keyword from the bot"),
-            ("queries", "List all keywords"),
-            ("create_allowlist", "Create an allowlist"),
-            ("delete_allowlist", "Delete the allowlist"),
-            ("add_country", "Add a country to the allowlist"),
-            ("remove_country", "Remove a country from the allowlist"),
-            ("allowlist", "List all countries in the allowlist")
-        ])
+        ("hello", "Verify if bot is running"),
+        ("add_query", "Add a keyword to the bot"),
+        ("remove_query", "Remove a keyword from the bot"),
+        ("queries", "List all keywords"),
+        ("create_allowlist", "Create an allowlist"),
+        ("delete_allowlist", "Delete the allowlist"),
+        ("add_country", "Add a country to the allowlist"),
+        ("remove_country", "Remove a country from the allowlist"),
+        ("allowlist", "List all countries in the allowlist")
+    ])
 
 
 if not os.path.exists("vinted.db"):
