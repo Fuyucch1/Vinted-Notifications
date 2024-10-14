@@ -1,5 +1,8 @@
 # Vinted-Notifications
 
+A telegram bot for real-time Vinted listing notifications/alerts. **Natively works on all Vinteds, no matter the country.**
+
+
 ⚠️ This is an early stage WIP. Expect bugs and missing features. ⚠️
 
 ## Table of Content
@@ -18,7 +21,7 @@ This bot allows you to look for multiple items at the same time and to be notifi
 
 Project was made with Python 3.11.
 
-1. Download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and extract it.
+1. Clone the repository or download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and extract it.
 
 2. Install the dependencies with pip
 
@@ -42,17 +45,23 @@ python telegram_bot.py
 
 After starting the bot, you can use the following commands on Telegram :
 
-`/add_keyword keyword` - Adds a keyword to look for\
-`/remove_keyword keyword` - Removes a keyword from the list\
-`/remove_keyword all` - Removes all keywords\
-`/keywords` - Get all keywords\
+`/add_query query` - Adds a query to supervise.\
+`/remove_query query_number` - Removes a keyword from the list.\
+`/remove_query all` - Removes all keywords\
+`/queries` - Get all queries\
 `/hello` - Check if the bot is working\
 `/create_allowlist` - Creates an allowlist of country of origin\
-⚠️ Be aware that creating an allowlist will slow down the bot and may cause it to get timeouts from VInted. ⚠️\
+⚠️ Be aware that creating an allowlist will slow down the bot. ⚠️\
 `/delete_allowlist` - Deletes the allowlist\
 `/add_country XX` - Adds a country to the allowlist. Country must follow ISO3166 standard\
 `/remove_country XX` - Removes a country from the allowlist\
 `/allowlist` - Get the allowlist
+
+## Quick example
+
+```
+/add_query https://www.vinted.fr/catalog?search_text=This%20is%20a%20test&time=1728936591&catalog[]=2309&price_to=150&currency=EUR&price_from=20&page=1
+```
 
 ## How to update
 
