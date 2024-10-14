@@ -1,5 +1,8 @@
 # Vinted-Notifications
 
+A telegram bot for real-time Vinted listing notifications/alerts. **Natively works on all Vinteds, no matter the country.**
+
+
 ⚠️ This is an early stage WIP. Expect bugs and missing features. ⚠️
 
 ## Table of Content
