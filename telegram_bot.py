@@ -6,7 +6,7 @@ from traceback import print_exc
 from time import sleep
 from asyncio import queues
 
-VER = "0.4.2"
+VER = "0.4.3"
 
 
 # verify if bot still running
@@ -118,27 +118,20 @@ async def send_new_post(content, url, text):
 
 def get_user_country(profile_id):
     url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}?localize=false"
-    # We're doing tons of queries, so we need to be careful with the rate limiting
-    # We should add proxies, but is that against TOS ?
-    # Let's just sleep at least 1s between each request
-    sleep(1)
     response = requester.get(url)
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
     if response.status_code == 429:
-        # extract the retry-after value from the response headers
-        retry_after = response.headers["retry-after"]
-        # wait for the time specified by the retry-after value
-        print(f"Too many requests, we should wait {retry_after} seconds before retrying. However, this is not implemented yet.")
-        # Yes, because waiting a whole minute for each query is pointless
-        # We're keeping the old 2s wait just in case...
-        sleep(2)
-        #sleep(int(retry_after))
-        #response = requester.get(url)
-    try:
+        # In case of rate limit, we're switching the endpoint. This one is slower, but it doesn't RL as soon. 
+        # We're limiting the items per page to 1 to grab as little data as possible
+        url = configuration_values.VINTED_BASE_URL + f"/api/v2/users/{profile_id}/items?page=1&per_page=1"
+        response = requester.get(url)
+        try:
+            user_country = response.json()["items"][0]["user"]["country_iso_code"]
+        except KeyError:
+            print("Couldn't get the country due to too many requests. Returning default value.")
+            user_country = "XX"
+    else:
         user_country = response.json()["user"]["country_iso_code"]
-    except KeyError:
-        print("Couldn't get the country, too many requests. Returning default value.")
-        user_country = "XX"
     return user_country
 
 
