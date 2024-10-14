@@ -7,8 +7,8 @@ def create_sqlite_db():
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE items (item NUMERIC, keyword TEXT)")
-        cursor.execute("CREATE TABLE keywords (keyword TEXT, already_processed NUMERIC DEFAULT 0)")
+        cursor.execute("CREATE TABLE items (item NUMERIC, query TEXT)")
+        cursor.execute("CREATE TABLE queries (query TEXT, already_processed NUMERIC DEFAULT 0)")
         conn.commit()
     except Exception:
         print_exc()
@@ -31,13 +31,13 @@ def is_item_in_db(id):
             conn.close()
 
 
-def add_item_to_db(id, keyword):
+def add_item_to_db(id, query):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        # Insert into db the id and the keyword related to the item
-        cursor.execute("INSERT INTO items VALUES (?, ?)", (id, keyword))
+        # Insert into db the id and the query related to the item
+        cursor.execute("INSERT INTO items VALUES (?, ?)", (id, query))
         conn.commit()
     except Exception:
         print_exc()
@@ -49,37 +49,37 @@ def add_item_to_db(id, keyword):
 def clean_db():
     conn = None
     # We clean the db by doing two processes :
-    # First, we remove all the items that are too old (we keep the last 100 per keyword)
-    # Then, we remove all lines in the items table that do not match any keyword in the keywords table
+    # First, we remove all the items that are too old (we keep the last 100 per query)
+    # Then, we remove all lines in the items table that do not match any query in the queries table
     # This should lead to no deletion, but let's keep it safe
 
-    # Get all the keywords
-    keywords = get_keywords()
-    # For each keyword we keep the last 100 items
-    for keyword in keywords:
+    # Get all the queries
+    queries = get_queries()
+    # For each query we keep the last 100 items
+    for query in queries:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT item FROM items WHERE keyword=? ORDER BY ROWID DESC LIMIT -1 OFFSET 100", (keyword[0],))
+        cursor.execute("SELECT item FROM items WHERE query=? ORDER BY ROWID DESC LIMIT -1 OFFSET 100", (query[0],))
         items = cursor.fetchall()
         for item in items:
             cursor.execute("DELETE FROM items WHERE item=?", (item[0],))
             conn.commit()
         conn.close()
 
-    # Remove all items that do not match any keyword
+    # Remove all items that do not match any query
     conn = sqlite3.connect("vinted.db")
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM items WHERE keyword NOT IN (SELECT keyword FROM keywords)")
+    cursor.execute("DELETE FROM items WHERE query NOT IN (SELECT query FROM queries)")
     conn.commit()
     conn.close()
 
 
-def get_keywords():
+def get_queries():
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM keywords")
+        cursor.execute("SELECT * FROM queries")
         return cursor.fetchall()
     except Exception:
         print_exc()
@@ -88,13 +88,15 @@ def get_keywords():
             conn.close()
 
 
-def is_keyword_in_db(keyword):
+def is_query_in_db(query):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT() FROM keywords WHERE keyword=?", (keyword,))
-        return cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT() FROM queries WHERE query=?", (query,))
+        # TODO : extract keyword from the query and compare it to the whole strings
+        if cursor.fetchone()[0]:
+            return True
     except Exception:
         print_exc()
     finally:
@@ -102,12 +104,12 @@ def is_keyword_in_db(keyword):
             conn.close()
 
 
-def add_keyword_to_db(keyword):
+def add_query_to_db(query):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO keywords VALUES (?, 0)", (keyword,))
+        cursor.execute("INSERT INTO queries VALUES (?, 0)", (query,))
         conn.commit()
     except Exception:
         print_exc()
@@ -116,13 +118,15 @@ def add_keyword_to_db(keyword):
             conn.close()
 
 
-def remove_keyword_from_db(keyword):
+def remove_query_from_db(query_number):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM keywords WHERE keyword=?", (keyword,))
-        cursor.execute("DELETE FROM items WHERE keyword=?", (keyword,))
+        cursor.execute("SELECT query FROM queries WHERE ROWID=?", (query_number,))
+        query = cursor.fetchone()[0]
+        cursor.execute("DELETE FROM queries WHERE ROWID=?", (query_number,))
+        cursor.execute("DELETE FROM items WHERE query=?", (query,))
         conn.commit()
     except Exception:
         print_exc()
@@ -131,12 +135,12 @@ def remove_keyword_from_db(keyword):
             conn.close()
 
 
-def remove_all_keywords_from_db():
+def remove_all_queries_from_db():
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM keywords")
+        cursor.execute("DELETE FROM queries")
         cursor.execute("DELETE FROM items")
         conn.commit()
     except Exception:
@@ -146,12 +150,12 @@ def remove_all_keywords_from_db():
             conn.close()
 
 
-def update_keyword_processed(keyword):
+def update_query_processed(query):
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("UPDATE keywords SET already_processed = 1 WHERE keyword=?", (keyword,))
+        cursor.execute("UPDATE queries SET already_processed = 1 WHERE query=?", (query,))
         conn.commit()
     except Exception:
         print_exc()
