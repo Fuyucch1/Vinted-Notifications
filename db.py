@@ -125,10 +125,11 @@ def remove_query_from_db(query_number):
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT query FROM queries WHERE ROWID=?", (query_number,))
-        query = cursor.fetchone()[0]
-        cursor.execute("DELETE FROM queries WHERE ROWID=?", (query_number,))
-        cursor.execute("DELETE FROM items WHERE query=?", (query,))
+        query_string = f"SELECT query, rowid FROM (SELECT query, rowid, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={query_number}"
+        cursor.execute(query_string)
+        query = cursor.fetchone()
+        cursor.execute("DELETE FROM queries WHERE ROWID=?", (query[1],))
+        cursor.execute("DELETE FROM items WHERE query=?", (query[0],))
         conn.commit()
     except Exception:
         print_exc()
