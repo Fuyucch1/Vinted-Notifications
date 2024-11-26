@@ -1,3 +1,3 @@
-pyVinted>=0.5.1
+pyVinted>=0.5.2
 python-telegram-bot[job-queue]>=21.6
 requests
