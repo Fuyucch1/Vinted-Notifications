@@ -142,8 +142,8 @@ async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_new_post(content, url, text):
     async with bot:
-        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=10,
-                               write_timeout=10,
+        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=20,
+                               write_timeout=20,
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=text, url=url)]]))
 
 
