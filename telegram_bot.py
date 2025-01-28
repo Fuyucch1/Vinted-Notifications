@@ -6,7 +6,7 @@ from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-VER = "0.5.2"
+VER = "0.5.2.1"
 
 
 # verify if bot still running
