@@ -6,7 +6,7 @@ from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-VER = "0.5.2.1"
+VER = "0.5.2.2"
 
 
 # verify if bot still running
@@ -38,17 +38,20 @@ async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = urlunparse(
         (parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
 
-    if db.is_query_in_db(searched_text[0]) is True:
+    # Some queries are made with filters only, so we need to check if the search_text is present
+    if searched_text is None and db.is_query_in_db(query) is True:
+        await update.message.reply_text(f'Query already exists.')
+    elif db.is_query_in_db(searched_text[0]) is True:
         await update.message.reply_text(f'Query already exists.')
     else:
-        # add the keyword to the db
+        # add the query to the db
         db.add_query_to_db(query)
         # Create a string with all the keywords
         query_list = format_queries()
         await update.message.reply_text(f'Query added. \nCurrent queries: \n{query_list}')
 
 
-# remove a keyword from the db
+# remove a query from the db
 async def remove_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     number = context.args
     if not number:
@@ -85,7 +88,11 @@ def format_queries():
 
         # Extract the value of 'search_text'
         search_text = query_params.get('search_text', [None])
-        queries_keywords.append(search_text)
+
+        if search_text[0] is None:
+            queries_keywords.append(query)
+        else:
+            queries_keywords.append(search_text)
 
     query_list = ("\n").join([str(i + 1) + ". " + j[0] for i, j in enumerate(queries_keywords)])
     return query_list
