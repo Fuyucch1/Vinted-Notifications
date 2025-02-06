@@ -6,7 +6,7 @@ from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-VER = "0.5.2.2"
+VER = "0.5.2.3"
 
 
 # verify if bot still running
@@ -41,7 +41,7 @@ async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Some queries are made with filters only, so we need to check if the search_text is present
     if searched_text is None and db.is_query_in_db(query) is True:
         await update.message.reply_text(f'Query already exists.')
-    elif db.is_query_in_db(searched_text[0]) is True:
+    elif searched_text is not None and db.is_query_in_db(searched_text[0]) is True:
         await update.message.reply_text(f'Query already exists.')
     else:
         # add the query to the db
