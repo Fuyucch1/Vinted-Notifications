@@ -9,3 +9,5 @@ MESSAGE = '''\
 🛍️ Brand : {brand}
 <a href='{image}'>&#8205;</a>
 '''
+
+PROXY_LIST=""
