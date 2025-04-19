@@ -71,7 +71,7 @@ class Items:
                 map(str, [tpl[1] for tpl in querys if tpl[0] == "material_ids[]"])
             ),
             "status_ids": ",".join(
-                map(str, [tpl[1] for tpl in querys if tpl[0] == "status[]"])
+                map(str, [tpl[1] for tpl in querys if tpl[0] == "status_ids[]"])
             ),
             "country_ids": ",".join(
                 map(str, [tpl[1] for tpl in querys if tpl[0] == "country_ids[]"])
