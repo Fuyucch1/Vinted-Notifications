@@ -177,13 +177,9 @@ def get_user_country(profile_id):
 async def process_items():
     all_queries = db.get_queries()
 
-    # Initialize Vinted with squid proxy if configured
-    if configuration_values.SQUID_PROXY:
-        vinted = Vinted(
-            proxy=configuration_values.SQUID_PROXY,
-            proxy_username=configuration_values.SQUID_USERNAME,
-            proxy_password=configuration_values.SQUID_PASSWORD
-        )
+    # Initialize Vinted with proxy if configured
+    if configuration_values.PROXY_LIST:
+        vinted = Vinted()
     else:
         vinted = Vinted()
 
