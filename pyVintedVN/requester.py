@@ -37,7 +37,6 @@ class Requester:
 
     def get(self, url, params=None):
         tried = 0
-        print(self.session.headers)
         while tried < self.MAX_RETRIES:
             tried += 1
             with self.session.get(url, params=params) as response:
@@ -63,7 +62,6 @@ class Requester:
 
     def update_cookies(self, cookies: dict):
         self.session.cookies.update(cookies)
-        print(f"[DEBUG] Cookies aggiornati manualmente ({len(cookies)} cookie ricevuti).")
 
 
 requester = Requester()
