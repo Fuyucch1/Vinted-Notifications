@@ -1,12 +1,12 @@
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
-from pyVinted import Vinted, requester
+from pyVintedVN import Vinted, requester
 from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-VER = "0.5.2.3"
+VER = "0.5.3"
 
 
 # verify if bot still running
@@ -176,7 +176,17 @@ def get_user_country(profile_id):
 
 async def process_items():
     all_queries = db.get_queries()
-    vinted = Vinted()
+
+    # Initialize Vinted with squid proxy if configured
+    if configuration_values.SQUID_PROXY:
+        vinted = Vinted(
+            proxy=configuration_values.SQUID_PROXY,
+            proxy_username=configuration_values.SQUID_USERNAME,
+            proxy_password=configuration_values.SQUID_PASSWORD
+        )
+    else:
+        vinted = Vinted()
+
     # for each keyword we parse data
     for query in all_queries:
         already_processed = query[1]
