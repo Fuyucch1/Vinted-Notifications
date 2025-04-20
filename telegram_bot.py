@@ -185,11 +185,10 @@ async def process_items():
 
     # for each keyword we parse data
     for query in all_queries:
-        already_processed = query[1]
-        data = vinted.items.search(query[0])
-        await items_queue.put((data, already_processed, query[0]))
-        # Update processed value to start notifying
-        db.update_query_processed(query[0])
+        all_items = vinted.items.search(query[0])
+        # Filter to only include new items. This should reduce the amount of db calls.
+        data = [item for item in all_items if item.is_new_item()]
+        await items_queue.put((data, query[0]))
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
@@ -222,16 +221,12 @@ async def clear_telegram_queue(context: ContextTypes.DEFAULT_TYPE):
 
 async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
     while 1:
-        data, already_processed, query = await items_queue.get()
+        data, query = await items_queue.get()
         for item in data:
             # Get the id of the item to check if it is already in the db
             id = item.id
-            # If it's the first run, we add the item to the db and do nothing else
-            if already_processed == 0:
-                db.add_item_to_db(id, query)
-                pass
             # If already in db, pass
-            elif db.is_item_in_db(id) != 0:
+            if db.is_item_in_db(id) != 0:
                 pass
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we add it to the db and do nothing else

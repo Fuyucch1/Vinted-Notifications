@@ -27,7 +27,7 @@ class Items:
             url (str): The URL of the search on Vinted.
             nbr_items (int, optional): Number of items to be returned. Defaults to 20.
             page (int, optional): Page number to be returned. Defaults to 1.
-            time (int, optional): Timestamp to filter items by time. Defaults to None.
+            time (int, optional): Timestamp to filter items by time. Defaults to None. Looks like it doesn't work though.
             json (bool, optional): Whether to return raw JSON data instead of Item objects. 
                 Defaults to False.
 

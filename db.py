@@ -8,7 +8,7 @@ def create_sqlite_db():
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
         cursor.execute("CREATE TABLE items (item NUMERIC, query TEXT)")
-        cursor.execute("CREATE TABLE queries (query TEXT, already_processed NUMERIC DEFAULT 0)")
+        cursor.execute("CREATE TABLE queries (query TEXT)")
         conn.commit()
     except Exception:
         print_exc()
@@ -153,18 +153,20 @@ def remove_all_queries_from_db():
             conn.close()
 
 
-def update_query_processed(query):
-    conn = None
-    try:
-        conn = sqlite3.connect("vinted.db")
-        cursor = conn.cursor()
-        cursor.execute("UPDATE queries SET already_processed = 1 WHERE query=?", (query,))
-        conn.commit()
-    except Exception:
-        print_exc()
-    finally:
-        if conn:
-            conn.close()
+### Will soon be removed.
+
+# def update_query_processed(query):
+#    conn = None
+#    try:
+#        conn = sqlite3.connect("vinted.db")
+#        cursor = conn.cursor()
+#        cursor.execute("UPDATE queries SET already_processed = 1 WHERE query=?", (query,))
+#        conn.commit()
+#    except Exception:
+#        print_exc()
+#    finally:
+#        if conn:
+#            conn.close()
 
 def create_allowlist():
     conn = None
