@@ -6,12 +6,13 @@ from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-VER = "0.5.3"
+VER = "0.6.0"
 
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Hello {update.effective_user.first_name}')
+    await update.message.reply_text(
+        f'Hello {update.effective_user.first_name}! Vinted-Notification is running under version {VER}.\n')
 
 
 # add a keyword to the db
@@ -73,7 +74,7 @@ async def remove_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(f'Query removed. \nCurrent queries: \n{query_list}')
 
 
-# get all keywords from the db
+# get all queries from the db
 async def queries(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query_list = format_queries()
     await update.message.reply_text(f'Current queries: \n{query_list}')
@@ -149,13 +150,13 @@ async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_new_post(content, url, text):
     async with bot:
-        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=20,
-                               write_timeout=20,
+        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=40,
+                               write_timeout=40,
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=text, url=url)]]))
 
 
 def get_user_country(profile_id):
-    # Users are shared between all Vinted platforms, so we can use any of them
+    # Users are shared between all Vinted platforms, so we can use whatever locale we want
     url = f"https://www.vinted.fr/api/v2/users/{profile_id}?localize=false"
     response = requester.get(url)
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
@@ -177,11 +178,8 @@ def get_user_country(profile_id):
 async def process_items():
     all_queries = db.get_queries()
 
-    # Initialize Vinted with proxy if configured
-    if configuration_values.PROXY_LIST:
-        vinted = Vinted()
-    else:
-        vinted = Vinted()
+    # Initialize Vinted
+    vinted = Vinted()
 
     # for each keyword we parse data
     for query in all_queries:
