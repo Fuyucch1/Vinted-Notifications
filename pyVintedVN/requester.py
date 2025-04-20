@@ -2,6 +2,7 @@ import requests
 import random
 from requests.exceptions import HTTPError
 import configuration_values
+import proxies
 
 
 class Requester:
@@ -74,6 +75,12 @@ class Requester:
         Raises:
             HTTPError: If the request fails after all retries
         """
+
+        # Set a random proxy for this request
+        proxy_configured = proxies.configure_proxy(self.session)
+        if self.debug and proxy_configured:
+            print(f"[DEBUG] Using proxy: {self.session.proxies}")
+
         tried = 0
         while tried < self.MAX_RETRIES:
             tried += 1
@@ -93,6 +100,24 @@ class Requester:
         raise HTTPError(f"Failed to get a valid response after {self.MAX_RETRIES} attempts")
 
     def post(self, url, params=None):
+        """
+        Make a POST request.
+
+        Args:
+            url (str): The URL to request
+            params (dict, optional): Parameters for the request
+
+        Returns:
+            requests.Response: The response object if successful
+
+        Raises:
+            HTTPError: If the request fails
+        """
+        # Set a random proxy for this request
+        proxy_configured = proxies.configure_proxy(self.session)
+        if self.debug and proxy_configured:
+            print(f"[DEBUG] Using proxy: {self.session.proxies}")
+
         response = self.session.post(url, params)
         response.raise_for_status()
         return response

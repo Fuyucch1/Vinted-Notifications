@@ -12,7 +12,7 @@ VER = "0.6.0"
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        f'Hello {update.effective_user.first_name}! Vinted-Notification is running under version {VER}.\n')
+        f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
 
 
 # add a keyword to the db
