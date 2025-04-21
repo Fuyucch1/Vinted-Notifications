@@ -11,13 +11,12 @@ MESSAGE = '''\
 '''
 
 #### PROXY SETTINGS ####
-# Free proxy list (used if SQUID_PROXY is not set)
+# Proxy list
 PROXY_LIST = ""
-
-# Squid proxy settings (leave empty to disable)
-SQUID_PROXY = ""  # Example: "http://proxy.example.com:3128" or just "proxy.example.com:3128"
-SQUID_USERNAME = ""  # Username for squid proxy authentication
-SQUID_PASSWORD = ""  # Password for squid proxy authentication
+# Proxy list link. Only one.
+PROXY_LIST_LINK = ""
+# Should we check proxies? Defaults to False bcs ffs I hate working with proxies
+CHECK_PROXIES = False
 
 #### HTTP HEADERS ####
 # User agents for rotating to avoid detection

@@ -6,12 +6,13 @@ from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
-VER = "0.5.3"
+VER = "0.6.0"
 
 
 # verify if bot still running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f'Hello {update.effective_user.first_name}')
+    await update.message.reply_text(
+        f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
 
 
 # add a keyword to the db
@@ -73,7 +74,7 @@ async def remove_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(f'Query removed. \nCurrent queries: \n{query_list}')
 
 
-# get all keywords from the db
+# get all queries from the db
 async def queries(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query_list = format_queries()
     await update.message.reply_text(f'Current queries: \n{query_list}')
@@ -149,13 +150,13 @@ async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def send_new_post(content, url, text):
     async with bot:
-        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=20,
-                               write_timeout=20,
+        await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=40,
+                               write_timeout=40,
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=text, url=url)]]))
 
 
 def get_user_country(profile_id):
-    # Users are shared between all Vinted platforms, so we can use any of them
+    # Users are shared between all Vinted platforms, so we can use whatever locale we want
     url = f"https://www.vinted.fr/api/v2/users/{profile_id}?localize=false"
     response = requester.get(url)
     # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
@@ -177,23 +178,15 @@ def get_user_country(profile_id):
 async def process_items():
     all_queries = db.get_queries()
 
-    # Initialize Vinted with squid proxy if configured
-    if configuration_values.SQUID_PROXY:
-        vinted = Vinted(
-            proxy=configuration_values.SQUID_PROXY,
-            proxy_username=configuration_values.SQUID_USERNAME,
-            proxy_password=configuration_values.SQUID_PASSWORD
-        )
-    else:
-        vinted = Vinted()
+    # Initialize Vinted
+    vinted = Vinted()
 
     # for each keyword we parse data
     for query in all_queries:
-        already_processed = query[1]
-        data = vinted.items.search(query[0])
-        await items_queue.put((data, already_processed, query[0]))
-        # Update processed value to start notifying
-        db.update_query_processed(query[0])
+        all_items = vinted.items.search(query[0])
+        # Filter to only include new items. This should reduce the amount of db calls.
+        data = [item for item in all_items if item.is_new_item()]
+        await items_queue.put((data, query[0]))
 
 
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
@@ -226,16 +219,12 @@ async def clear_telegram_queue(context: ContextTypes.DEFAULT_TYPE):
 
 async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
     while 1:
-        data, already_processed, query = await items_queue.get()
+        data, query = await items_queue.get()
         for item in data:
             # Get the id of the item to check if it is already in the db
             id = item.id
-            # If it's the first run, we add the item to the db and do nothing else
-            if already_processed == 0:
-                db.add_item_to_db(id, query)
-                pass
             # If already in db, pass
-            elif db.is_item_in_db(id) != 0:
+            if db.is_item_in_db(id) != 0:
                 pass
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we add it to the db and do nothing else
