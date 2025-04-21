@@ -7,7 +7,7 @@ import db, core
 def scraper_process(items_queue):
     print("Scrape process started")
     scraper_scheduler = BackgroundScheduler()
-    scraper_scheduler.add_job(core.process_items, 'interval', seconds=30, args=[items_queue], name="scraper")
+    scraper_scheduler.add_job(core.process_items, 'interval', seconds=5, args=[items_queue], name="scraper")
     scraper_scheduler.start()
     try:
         # Keep the process running
@@ -40,11 +40,12 @@ def intermediate_process(queue):
 
 def telegram_bot_process(queue):
     print("Telegram bot process started")
+    import asyncio
     try:
         # Import LeRobot
         from telegram_bot import LeRobot
-        LeRobot(queue)
         # The bot will run with app.run_polling() which is already in the module
+        asyncio.run(LeRobot(queue))
     except (KeyboardInterrupt, SystemExit):
         print("Telegram bot process stopped")
     except Exception as e:

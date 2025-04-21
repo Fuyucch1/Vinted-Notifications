@@ -6,6 +6,11 @@ import core
 VER = "0.6.0"
 
 
+async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
+
+
 class LeRobot:
     def __init__(self, queue):
         from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
@@ -22,7 +27,7 @@ class LeRobot:
         self.new_items_queue = queue
 
         # Handler verify if bot is running
-        self.app.add_handler(CommandHandler("hello", self.hello))
+        self.app.add_handler(CommandHandler("hello", hello))
         # Keyword handlers
         self.app.add_handler(CommandHandler("add_query", self.add_query))
         self.app.add_handler(CommandHandler("remove_query", self.remove_query))
@@ -37,24 +42,22 @@ class LeRobot:
 
         # TODO : Manage removals after current items have been processed.
 
-        self.job_queue = self.app.job_queue
+        job_queue = self.app.job_queue
+        job_queue.run_once(self.set_commands, when=1)
         # Every day we check for a new version
-        self.job_queue.run_repeating(self.check_version, interval=86400, first=1)
+        job_queue.run_repeating(self.check_version, interval=86400, first=1)
         # Every day we clean the db
-        self.job_queue.run_repeating(self.clean_db, interval=86400, first=1)
-        # Every second we send the posts to telegram
-        self.job_queue.run_once(self.clear_telegram_queue, when=1)
+        job_queue.run_repeating(self.clean_db, interval=86400, first=1)
+        # Every second we check for new posts to send to telegram
+        job_queue.run_repeating(self.check_telegram_queue, interval=1, first=1)
         # Set the commands
-        self.job_queue.run_once(self.set_commands, when=1)
+
 
         print("Bot started. Head to your telegram and type /hello to check if it's running.")
 
         self.app.run_polling()
 
     # Verify if the bot is running
-    async def hello(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        await update.message.reply_text(
-            f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
 
     ### QUERIES ###
 
@@ -155,8 +158,8 @@ class LeRobot:
     async def clean_db(self, context: ContextTypes.DEFAULT_TYPE):
         db.clean_db()
 
-    async def clear_telegram_queue(self, context: ContextTypes.DEFAULT_TYPE):
-        while 1:
+    async def check_telegram_queue(self, context: ContextTypes.DEFAULT_TYPE):
+        if not self.new_items_queue.empty():
             content, url, text = self.new_items_queue.get()
             await self.send_new_post(content, url, text)
 
