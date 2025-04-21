@@ -1,9 +1,6 @@
-import db, os, configuration_values, requests
+import db, configuration_values
 from pyVintedVN import Vinted, requester
-from traceback import print_exc
-from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-
 
 def process_query(query):
     """
@@ -186,16 +183,18 @@ def get_user_country(profile_id):
     return user_country
 
 
-async def process_items(items_queue):
+def process_items(queue):
     """
     Process all queries from the database, search for items, and put them in the queue.
+    Uses the global items_queue by default, but can accept a custom queue for backward compatibility.
 
     Args:
-        items_queue (asyncio.Queue): The queue to put the items in
+        queue (Queue, optional): The queue to put the items in. Defaults to the global items_queue.
 
     Returns:
         None
     """
+
     all_queries = db.get_queries()
 
     # Initialize Vinted
@@ -206,4 +205,39 @@ async def process_items(items_queue):
         all_items = vinted.items.search(query[0])
         # Filter to only include new items. This should reduce the amount of db calls.
         data = [item for item in all_items if item.is_new_item()]
-        await items_queue.put((data, query[0]))
+        queue.put((data, query[0]))
+        print(f"Scraped {len(data)} items for query: {query[0]}")
+    print("done")
+
+
+def clear_item_queue(items_queue, new_items_queue):
+    """
+    Process items from the items_queue.
+    This function is scheduled to run frequently.
+    """
+    if not items_queue.empty():
+        data, query = items_queue.get()
+        for item in data:
+            # Get the id of the item to check if it is already in the db
+            id = item.id
+            # If already in db, pass
+            if db.is_item_in_db(id) != 0:
+                pass
+            # If there's an allowlist and
+            # If the user's country is not in the allowlist, we add it to the db and do nothing else
+            elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
+                    db.get_allowlist() + ["XX"]):
+                db.add_item_to_db(id, query)
+                pass
+            else:
+                # We create the message
+                content = configuration_values.MESSAGE.format(
+                    title=item.title,
+                    price=str(item.price) + " €",
+                    brand=item.brand_title,
+                    image=None if item.photo is None else item.photo
+                )
+                # add the item to the queue
+                new_items_queue.put((content, item.url, "Open Vinted"))
+                # Add the item to the db
+                db.add_item_to_db(id, query)
