@@ -5,136 +5,90 @@ from pyVintedVN import Vinted, requester
 from traceback import print_exc
 from asyncio import queues
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+import core
 
 VER = "0.6.0"
 
 
-# verify if bot still running
+# Verify if the bot is running
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
 
 
-# add a keyword to the db
+### QUERIES ###
+
+# Add a query to the db
 async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = context.args
     if not query:
         await update.message.reply_text('No query provided.')
         return
-    query = query[0]
-    # Parse the URL and extract the query parameters
-    parsed_url = urlparse(query)
-    query_params = parse_qs(parsed_url.query)
 
-    # Ensure the order flag is set to newest_first
-    query_params['order'] = ['newest_first']
-    # Remove time and search_id if provided
-    query_params.pop('time', None)
-    query_params.pop('search_id', None)
+    # Process the query using the core function
+    message, is_new_query = core.process_query(query[0])
 
-    searched_text = query_params.get('search_text')
-
-    # Rebuild the query string and the entire URL
-    new_query = urlencode(query_params, doseq=True)
-    query = urlunparse(
-        (parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
-
-    # Some queries are made with filters only, so we need to check if the search_text is present
-    if searched_text is None and db.is_query_in_db(query) is True:
-        await update.message.reply_text(f'Query already exists.')
-    elif searched_text is not None and db.is_query_in_db(searched_text[0]) is True:
-        await update.message.reply_text(f'Query already exists.')
-    else:
-        # add the query to the db
-        db.add_query_to_db(query)
+    if is_new_query:
         # Create a string with all the keywords
-        query_list = format_queries()
-        await update.message.reply_text(f'Query added. \nCurrent queries: \n{query_list}')
+        query_list = core.get_formatted_query_list()
+        await update.message.reply_text(f'{message} \nCurrent queries: \n{query_list}')
+    else:
+        await update.message.reply_text(message)
 
 
-# remove a query from the db
+# Remove a query from the db
 async def remove_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     number = context.args
     if not number:
         await update.message.reply_text('No number provided.')
         return
-    number = number[0]
-    if number == "all":
-        db.remove_all_queries_from_db()
-        await update.message.reply_text(f'All queries removed.')
-        return
-    # if number is not a number
-    if not number[0].isdigit():
-        await update.message.reply_text('Invalid number.')
-        return
-    else:
-        db.remove_query_from_db(number)
-        # We'll write the keyword lis this way : 1. keyword\n2. keyword\n3. keyword
-        query_list = format_queries()
-        await update.message.reply_text(f'Query removed. \nCurrent queries: \n{query_list}')
 
+    # Process the removal using the core function
+    message, success = core.process_remove_query(number[0])
+
+    if success:
+        if number[0] == "all":
+            await update.message.reply_text(message)
+        else:
+            # Get the updated list of queries
+            query_list = core.get_formatted_query_list()
+            await update.message.reply_text(f'{message} \nCurrent queries: \n{query_list}')
+    else:
+        await update.message.reply_text(message)
 
 # get all queries from the db
 async def queries(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query_list = format_queries()
+    query_list = core.get_formatted_query_list()
     await update.message.reply_text(f'Current queries: \n{query_list}')
 
 
-def format_queries():
-    all_queries = db.get_queries()
-    queries_keywords = []
-    for query in all_queries:
-        parsed_url = urlparse(query[0])
-        query_params = parse_qs(parsed_url.query)
-
-        # Extract the value of 'search_text'
-        search_text = query_params.get('search_text', [None])
-
-        if search_text[0] is None:
-            queries_keywords.append(query)
-        else:
-            queries_keywords.append(search_text)
-
-    query_list = ("\n").join([str(i + 1) + ". " + j[0] for i, j in enumerate(queries_keywords)])
-    return query_list
-
+### ALLOWLIST ###
 
 async def clear_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     db.clear_allowlist()
     await update.message.reply_text(f'Allowlist cleared. All countries are allowed.')
-
 
 async def add_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     country = context.args
     if not country:
         await update.message.reply_text('No country provided')
         return
-    # remove spaces
-    country = ' '.join(country).replace(" ", "")
-    if len(country) != 2:
-        await update.message.reply_text('Invalid country code')
-        return
-    # if already in allowlist
-    if country.upper() in (country_list := db.get_allowlist()):
-        await update.message.reply_text(f'Country "{country.upper()}" already in allowlist. Current allowlist: {country_list}')
-    else:
-        db.add_to_allowlist(country.upper())
-        await update.message.reply_text(f'Done. Current allowlist: {db.get_allowlist()}')
 
+    # Process the country using the core function
+    message, country_list = core.process_add_country(' '.join(country))
+
+    await update.message.reply_text(f'{message} Current allowlist: {country_list}')
 
 async def remove_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     country = context.args
     if not country:
         await update.message.reply_text('No country provided')
         return
-    # remove spaces
-    country = ' '.join(country).replace(" ", "")
-    if len(country) != 2:
-        await update.message.reply_text('Invalid country code')
-        return
-    db.remove_from_allowlist(country.upper())
-    await update.message.reply_text(f'Done. Current allowlist: {db.get_allowlist()}')
 
+    # Process the country using the core function
+    message, country_list = core.process_remove_country(' '.join(country))
+
+    await update.message.reply_text(f'{message} Current allowlist: {country_list}')
 
 async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if db.get_allowlist() == 0:
@@ -143,6 +97,8 @@ async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f'Current allowlist: {db.get_allowlist()}')
 
 
+### TELEGRAM SPECIFIC FUNCTIONS ###
+
 async def send_new_post(content, url, text):
     async with bot:
         await bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=40,
@@ -150,44 +106,10 @@ async def send_new_post(content, url, text):
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=text, url=url)]]))
 
 
-def get_user_country(profile_id):
-    # Users are shared between all Vinted platforms, so we can use whatever locale we want
-    url = f"https://www.vinted.fr/api/v2/users/{profile_id}?localize=false"
-    response = requester.get(url)
-    # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
-    if response.status_code == 429:
-        # In case of rate limit, we're switching the endpoint. This one is slower, but it doesn't RL as soon. 
-        # We're limiting the items per page to 1 to grab as little data as possible
-        url = f"https://www.vinted.fr/api/v2/users/{profile_id}/items?page=1&per_page=1"
-        response = requester.get(url)
-        try:
-            user_country = response.json()["items"][0]["user"]["country_iso_code"]
-        except KeyError:
-            print("Couldn't get the country due to too many requests. Returning default value.")
-            user_country = "XX"
-    else:
-        user_country = response.json()["user"]["country_iso_code"]
-    return user_country
-
-
-async def process_items():
-    all_queries = db.get_queries()
-
-    # Initialize Vinted
-    vinted = Vinted()
-
-    # for each keyword we parse data
-    for query in all_queries:
-        all_items = vinted.items.search(query[0])
-        # Filter to only include new items. This should reduce the amount of db calls.
-        data = [item for item in all_items if item.is_new_item()]
-        await items_queue.put((data, query[0]))
-
-
 async def background_worker(context: ContextTypes.DEFAULT_TYPE):
     # TODO : Lock while working
     try:
-        await process_items()
+        await core.process_items(items_queue)
     except Exception:
         print_exc()
 
@@ -223,7 +145,7 @@ async def clear_item_queue(context: ContextTypes.DEFAULT_TYPE):
                 pass
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we add it to the db and do nothing else
-            elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
+            elif db.get_allowlist() != 0 and (core.get_user_country(item.raw_data["user"]["id"])) not in (
                     db.get_allowlist() + ["XX"]):
                 db.add_item_to_db(id, query)
                 pass

@@ -1,0 +1,209 @@
+import db, os, configuration_values, requests
+from pyVintedVN import Vinted, requester
+from traceback import print_exc
+from asyncio import queues
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
+
+def process_query(query):
+    """
+    Process a Vinted query URL by:
+    1. Parsing the URL and extracting query parameters
+    2. Ensuring the order flag is set to "newest_first"
+    3. Removing time and search_id parameters
+    4. Rebuilding the query string and URL
+    5. Checking if the query already exists in the database
+    6. Adding the query to the database if it doesn't exist
+
+    Args:
+        query (str): The Vinted query URL
+
+    Returns:
+        tuple: (message, is_new_query)
+            - message (str): Status message
+            - is_new_query (bool): True if query was added, False if it already existed
+    """
+    # Parse the URL and extract the query parameters
+    parsed_url = urlparse(query)
+    query_params = parse_qs(parsed_url.query)
+
+    # Ensure the order flag is set to newest_first
+    query_params['order'] = ['newest_first']
+    # Remove time and search_id if provided
+    query_params.pop('time', None)
+    query_params.pop('search_id', None)
+
+    searched_text = query_params.get('search_text')
+
+    # Rebuild the query string and the entire URL
+    new_query = urlencode(query_params, doseq=True)
+    processed_query = urlunparse(
+        (parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
+
+    # Some queries are made with filters only, so we need to check if the search_text is present
+    if searched_text is None and db.is_query_in_db(processed_query) is True:
+        return "Query already exists.", False
+    elif searched_text is not None and db.is_query_in_db(searched_text[0]) is True:
+        return "Query already exists.", False
+    else:
+        # add the query to the db
+        db.add_query_to_db(processed_query)
+        return "Query added.", True
+
+
+def get_formatted_query_list():
+    """
+    Get a formatted list of all queries in the database.
+
+    Returns:
+        str: A formatted string with all queries, numbered
+    """
+    all_queries = db.get_queries()
+    queries_keywords = []
+    for query in all_queries:
+        parsed_url = urlparse(query[0])
+        query_params = parse_qs(parsed_url.query)
+
+        # Extract the value of 'search_text'
+        search_text = query_params.get('search_text', [None])
+
+        if search_text[0] is None:
+            queries_keywords.append(query)
+        else:
+            queries_keywords.append(search_text)
+
+    query_list = ("\n").join([str(i + 1) + ". " + j[0] for i, j in enumerate(queries_keywords)])
+    return query_list
+
+
+def process_remove_query(number):
+    """
+    Process the removal of a query from the database.
+
+    Args:
+        number (str): The number of the query to remove or "all" to remove all queries
+
+    Returns:
+        tuple: (message, success)
+            - message (str): Status message
+            - success (bool): True if query was removed successfully
+    """
+    if number == "all":
+        db.remove_all_queries_from_db()
+        return "All queries removed.", True
+
+    # Check if number is a valid digit
+    if not number[0].isdigit():
+        return "Invalid number.", False
+
+    # Remove the query from the database
+    db.remove_query_from_db(number)
+    return "Query removed.", True
+
+
+def process_add_country(country):
+    """
+    Process the addition of a country to the allowlist.
+
+    Args:
+        country (str): The country code to add
+
+    Returns:
+        tuple: (message, country_list)
+            - message (str): Status message
+            - country_list (list): Current list of allowed countries
+    """
+    # Format the country code (remove spaces)
+    country = country.replace(" ", "")
+    country_list = db.get_allowlist()
+
+    # Validate the country code (check if it's 2 characters long)
+    if len(country) != 2:
+        return "Invalid country code", country_list
+
+    # Check if the country is already in the allowlist
+    if country.upper() in country_list:
+        return f'Country "{country.upper()}" already in allowlist.', country_list
+
+    # Add the country to the allowlist
+    db.add_to_allowlist(country.upper())
+    return "Country added.", db.get_allowlist()
+
+
+def process_remove_country(country):
+    """
+    Process the removal of a country from the allowlist.
+
+    Args:
+        country (str): The country code to remove
+
+    Returns:
+        tuple: (message, country_list)
+            - message (str): Status message
+            - country_list (list): Current list of allowed countries
+    """
+    # Format the country code (remove spaces)
+    country = country.replace(" ", "")
+
+    # Validate the country code (check if it's 2 characters long)
+    if len(country) != 2:
+        return "Invalid country code", db.get_allowlist()
+
+    # Remove the country from the allowlist
+    db.remove_from_allowlist(country.upper())
+    return "Country removed.", db.get_allowlist()
+
+
+def get_user_country(profile_id):
+    """
+    Get the country code for a Vinted user.
+
+    Makes an API request to retrieve the user's country code.
+    Handles rate limiting by trying an alternative endpoint.
+
+    Args:
+        profile_id (str): The Vinted user's profile ID
+
+    Returns:
+        str: The user's country code (2-letter ISO code) or "XX" if it can't be determined
+    """
+    # Users are shared between all Vinted platforms, so we can use whatever locale we want
+    url = f"https://www.vinted.fr/api/v2/users/{profile_id}?localize=false"
+    response = requester.get(url)
+    # That's a LOT of requests, so if we get a 429 we wait a bit before retrying once
+    if response.status_code == 429:
+        # In case of rate limit, we're switching the endpoint. This one is slower, but it doesn't RL as soon. 
+        # We're limiting the items per page to 1 to grab as little data as possible
+        url = f"https://www.vinted.fr/api/v2/users/{profile_id}/items?page=1&per_page=1"
+        response = requester.get(url)
+        try:
+            user_country = response.json()["items"][0]["user"]["country_iso_code"]
+        except KeyError:
+            print("Couldn't get the country due to too many requests. Returning default value.")
+            user_country = "XX"
+    else:
+        user_country = response.json()["user"]["country_iso_code"]
+    return user_country
+
+
+async def process_items(items_queue):
+    """
+    Process all queries from the database, search for items, and put them in the queue.
+
+    Args:
+        items_queue (asyncio.Queue): The queue to put the items in
+
+    Returns:
+        None
+    """
+    all_queries = db.get_queries()
+
+    # Initialize Vinted
+    vinted = Vinted()
+
+    # for each keyword we parse data
+    for query in all_queries:
+        all_items = vinted.items.search(query[0])
+        # Filter to only include new items. This should reduce the amount of db calls.
+        data = [item for item in all_items if item.is_new_item()]
+        await items_queue.put((data, query[0]))
