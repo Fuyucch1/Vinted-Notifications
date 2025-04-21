@@ -15,7 +15,31 @@ _LAST_PROXY_CHECK_TIME = 0  # Timestamp of the last proxy check
 # URL to test proxies against
 _TEST_URL = "https://www.vinted.fr/"
 _TEST_TIMEOUT = 2  # seconds
+# Maximum number of concurrent workers for proxy checking
+MAX_PROXY_WORKERS = 10
+# Time interval in seconds after which proxies should be rechecked (6 hours)
+PROXY_RECHECK_INTERVAL = 6 * 60 * 60
 
+
+def fetch_proxies_from_link(url: str) -> List[str]:
+    """
+    Fetch proxies from a URL.
+
+    Args:
+        url (str): URL to fetch proxies from.
+
+    Returns:
+        List[str]: List of proxies.
+    """
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            # Split by newlines and filter out empty lines
+            return [line.strip() for line in response.text.splitlines() if line.strip()]
+        return []
+    except Exception:
+        # If there's any error fetching proxies, return an empty list
+        return []
 
 def check_proxies_parallel(proxies_list: List[str]) -> List[str]:
     """
@@ -30,7 +54,7 @@ def check_proxies_parallel(proxies_list: List[str]) -> List[str]:
     working_proxies = []
 
     # Use ThreadPoolExecutor to check proxies in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=configuration_values.MAX_PROXY_WORKERS) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PROXY_WORKERS) as executor:
         # Submit all proxy checking tasks
         future_to_proxy = {executor.submit(check_proxy, proxy): proxy for proxy in proxies_list}
 
@@ -70,7 +94,7 @@ def get_random_proxy() -> Optional[str]:
     # Check if we need to recheck proxies (if more than PROXY_RECHECK_INTERVAL seconds have passed)
     if (_PROXY_CACHE_INITIALIZED and
             _LAST_PROXY_CHECK_TIME > 0 and
-            current_time - _LAST_PROXY_CHECK_TIME > configuration_values.PROXY_RECHECK_INTERVAL):
+            current_time - _LAST_PROXY_CHECK_TIME > PROXY_RECHECK_INTERVAL):
         # Reset cache to force recheck
         _PROXY_CACHE_INITIALIZED = False
         _PROXY_CACHE = None
@@ -93,21 +117,39 @@ def get_random_proxy() -> Optional[str]:
     _PROXY_CACHE_INITIALIZED = True
     _LAST_PROXY_CHECK_TIME = current_time  # Update the last check time
 
+    # Initialize all_proxies list
+    all_proxies = []
+
     # Check if PROXY_LIST is configured
     if configuration_values.PROXY_LIST:
         # If PROXY_LIST is a string with multiple proxies separated by semicolons
         all_proxies = [p.strip() for p in configuration_values.PROXY_LIST.split(';') if p.strip()]
 
-        # Check proxies in parallel
-        working_proxies = check_proxies_parallel(all_proxies)
+    # Check if PROXY_LIST_LINK is configured
+    if configuration_values.PROXY_LIST_LINK:
+        # Fetch proxies from the link and add them to all_proxies
+        link_proxies = fetch_proxies_from_link(configuration_values.PROXY_LIST_LINK)
+        all_proxies.extend(link_proxies)
 
-        if working_proxies:
-            _PROXY_CACHE = working_proxies
-            # If there's only one working proxy, cache it separately
-            if len(working_proxies) == 1:
-                _SINGLE_PROXY = working_proxies[0]
+    # Check proxies in parallel if we have any and CHECK_PROXIES is True
+    if all_proxies:
+        if configuration_values.CHECK_PROXIES:
+            working_proxies = check_proxies_parallel(all_proxies)
+            if working_proxies:
+                _PROXY_CACHE = working_proxies
+                # If there's only one working proxy, cache it separately
+                if len(working_proxies) == 1:
+                    _SINGLE_PROXY = working_proxies[0]
+                    return _SINGLE_PROXY
+                return random.choice(working_proxies)
+        else:
+            # If CHECK_PROXIES is False, just cache all proxies without checking them
+            _PROXY_CACHE = all_proxies
+            # If there's only one proxy, cache it separately
+            if len(all_proxies) == 1:
+                _SINGLE_PROXY = all_proxies[0]
                 return _SINGLE_PROXY
-            return random.choice(working_proxies)
+            return _SINGLE_PROXY
 
     # No working proxies found
     _PROXY_CACHE = None
