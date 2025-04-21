@@ -52,14 +52,14 @@ class LeRobot:
         self.app.run_polling()
 
     # Verify if the bot is running
-    async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def hello(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
 
     ### QUERIES ###
 
     # Add a query to the db
-    async def add_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def add_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = context.args
         if not query:
             await update.message.reply_text('No query provided.')
@@ -76,7 +76,7 @@ class LeRobot:
             await update.message.reply_text(message)
 
     # Remove a query from the db
-    async def remove_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def remove_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         number = context.args
         if not number:
             await update.message.reply_text('No number provided.')
@@ -96,17 +96,17 @@ class LeRobot:
             await update.message.reply_text(message)
 
     # get all queries from the db
-    async def queries(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def queries(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query_list = core.get_formatted_query_list()
         await update.message.reply_text(f'Current queries: \n{query_list}')
 
     ### ALLOWLIST ###
 
-    async def clear_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def clear_allowlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         db.clear_allowlist()
         await update.message.reply_text(f'Allowlist cleared. All countries are allowed.')
 
-    async def add_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def add_country(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         country = context.args
         if not country:
             await update.message.reply_text('No country provided')
@@ -117,7 +117,7 @@ class LeRobot:
 
         await update.message.reply_text(f'{message} Current allowlist: {country_list}')
 
-    async def remove_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def remove_country(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         country = context.args
         if not country:
             await update.message.reply_text('No country provided')
@@ -128,7 +128,7 @@ class LeRobot:
 
         await update.message.reply_text(f'{message} Current allowlist: {country_list}')
 
-    async def allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def allowlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if db.get_allowlist() == 0:
             await update.message.reply_text(f'No allowlist set. All countries are allowed.')
         else:
