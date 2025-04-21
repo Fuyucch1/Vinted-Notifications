@@ -154,6 +154,5 @@ class Requester:
     setLocale = set_locale
     setCookies = set_cookies
 
-
 # Singleton instance of the Requester class
 requester = Requester()
