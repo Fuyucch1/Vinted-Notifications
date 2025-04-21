@@ -11,10 +11,12 @@ MESSAGE = '''\
 '''
 
 #### PROXY SETTINGS ####
-# Proxy list (used if SQUID_PROXY is not set)
-# Can use both anonmyous and non-anonymous proxies
-# Format: "http://username:password@ip:port"
+# Proxy list
 PROXY_LIST = ""
+# Proxy list link. Only one.
+PROXY_LIST_LINK = ""
+# Should we check proxies? Defaults to False bcs ffs I hate working with proxies
+CHECK_PROXIES = False
 
 #### HTTP HEADERS ####
 # User agents for rotating to avoid detection
