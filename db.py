@@ -9,6 +9,7 @@ def create_sqlite_db():
         cursor = conn.cursor()
         cursor.execute("CREATE TABLE items (item NUMERIC, query TEXT)")
         cursor.execute("CREATE TABLE queries (query TEXT)")
+        cursor.execute("CREATE TABLE allowlist (country TEXT)")
         conn.commit()
     except Exception:
         print_exc()
@@ -152,18 +153,6 @@ def remove_all_queries_from_db():
         if conn:
             conn.close()
 
-def create_allowlist():
-    conn = None
-    try:
-        conn = sqlite3.connect("vinted.db")
-        cursor = conn.cursor()
-        cursor.execute("CREATE TABLE allowlist (country TEXT)")
-        conn.commit()
-    except Exception:
-        print_exc()
-    finally:
-        if conn:
-            conn.close()
 
 def add_to_allowlist(country):
     conn = None
@@ -197,20 +186,23 @@ def get_allowlist():
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM allowlist")
-        # return list of countries
-        return [country[0] for country in cursor.fetchall()]
-    except Exception:
-        return 0
+        # Get list of countries
+        countries = [country[0] for country in cursor.fetchall()]
+        # Return 0 if there are no countries in the allowlist
+        if not countries:
+            return 0
+        return countries
     finally:
         if conn:
             conn.close()
 
-def delete_allowlist():
+
+def clear_allowlist():
     conn = None
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS allowlist")
+        cursor.execute("DELETE FROM allowlist")
         conn.commit()
     except Exception:
         print_exc()

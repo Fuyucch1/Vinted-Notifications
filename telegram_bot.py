@@ -99,14 +99,9 @@ def format_queries():
     return query_list
 
 
-async def create_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    db.create_allowlist()
-    await update.message.reply_text(f'Allowlist created. Add countries by using /add_country "FR,BE,ES,IT,LU,DE etc."')
-
-
-async def delete_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    db.delete_allowlist()
-    await update.message.reply_text(f'Allowlist deleted. All countries are allowed.')
+async def clear_allowlist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    db.clear_allowlist()
+    await update.message.reply_text(f'Allowlist cleared. All countries are allowed.')
 
 
 async def add_country(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -252,8 +247,7 @@ async def set_commands(context: ContextTypes.DEFAULT_TYPE):
         ("add_query", "Add a keyword to the bot"),
         ("remove_query", "Remove a keyword from the bot"),
         ("queries", "List all keywords"),
-        ("create_allowlist", "Create an allowlist"),
-        ("delete_allowlist", "Delete the allowlist"),
+        ("clear_allowlist", "Clear the allowlist"),
         ("add_country", "Add a country to the allowlist"),
         ("remove_country", "Remove a country from the allowlist"),
         ("allowlist", "List all countries in the allowlist")
@@ -278,8 +272,7 @@ app.add_handler(CommandHandler("add_query", add_query))
 app.add_handler(CommandHandler("remove_query", remove_query))
 app.add_handler(CommandHandler("queries", queries))
 # Allowlist handlers
-app.add_handler(CommandHandler("create_allowlist", create_allowlist))
-app.add_handler(CommandHandler("delete_allowlist", delete_allowlist))
+app.add_handler(CommandHandler("clear_allowlist", clear_allowlist))
 app.add_handler(CommandHandler("add_country", add_country))
 app.add_handler(CommandHandler("remove_country", remove_country))
 app.add_handler(CommandHandler("allowlist", allowlist))
