@@ -20,7 +20,6 @@ MAX_PROXY_WORKERS = 10
 # Time interval in seconds after which proxies should be rechecked (6 hours)
 PROXY_RECHECK_INTERVAL = 6 * 60 * 60
 
-
 def fetch_proxies_from_link(url: str) -> List[str]:
     """
     Fetch proxies from a URL.
@@ -149,7 +148,7 @@ def get_random_proxy() -> Optional[str]:
             if len(all_proxies) == 1:
                 _SINGLE_PROXY = all_proxies[0]
                 return _SINGLE_PROXY
-            return _SINGLE_PROXY
+            return random.choice(all_proxies)
 
     # No working proxies found
     _PROXY_CACHE = None
