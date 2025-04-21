@@ -1,6 +1,10 @@
 import db, configuration_values
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from logger import get_logger
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 def process_query(query):
     """
@@ -176,7 +180,7 @@ def get_user_country(profile_id):
         try:
             user_country = response.json()["items"][0]["user"]["country_iso_code"]
         except KeyError:
-            print("Couldn't get the country due to too many requests. Returning default value.")
+            logger.warning("Couldn't get the country due to too many requests. Returning default value.")
             user_country = "XX"
     else:
         user_country = response.json()["user"]["country_iso_code"]
@@ -206,8 +210,7 @@ def process_items(queue):
         # Filter to only include new items. This should reduce the amount of db calls.
         data = [item for item in all_items if item.is_new_item()]
         queue.put((data, query[0]))
-        print(f"Scraped {len(data)} items for query: {query[0]}")
-    print("done")
+        logger.info(f"Scraped {len(data)} items for query: {query[0]}")
 
 
 def clear_item_queue(items_queue, new_items_queue):

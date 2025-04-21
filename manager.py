@@ -2,10 +2,14 @@ import multiprocessing
 from apscheduler.schedulers.background import BackgroundScheduler
 import time, telegram_bot
 import db, core
+from logger import get_logger
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 
 def scraper_process(items_queue):
-    print("Scrape process started")
+    logger.info("Scrape process started")
     scraper_scheduler = BackgroundScheduler()
     scraper_scheduler.add_job(core.process_items, 'interval', seconds=5, args=[items_queue], name="scraper")
     scraper_scheduler.start()
@@ -15,31 +19,32 @@ def scraper_process(items_queue):
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         scraper_scheduler.shutdown()
-        print("Scrape process stopped")
+        logger.info("Scrape process stopped")
 
 
 def item_extractor(items_queue, new_items_queue):
+    logger.info("Item extractor process started")
     try:
         while True:
             # Check if there's an item in the queue
             core.clear_item_queue(items_queue, new_items_queue)
             time.sleep(0.1)  # Small sleep to prevent high CPU usage
     except (KeyboardInterrupt, SystemExit):
-        print("Consumer process stopped")
+        logger.info("Consumer process stopped")
 
 
 def intermediate_process(queue):
-    print("Intermediate process started")
+    logger.info("Intermediate process started")
     try:
         pass
     except (KeyboardInterrupt, SystemExit):
-        print("Intermediate process stopped")
+        logger.info("Intermediate process stopped")
     except Exception as e:
-        print(f"Error in intermediate process: {e}")
+        logger.error(f"Error in intermediate process: {e}", exc_info=True)
 
 
 def telegram_bot_process(queue):
-    print("Telegram bot process started")
+    logger.info("Telegram bot process started")
     import asyncio
     try:
         # Import LeRobot
@@ -47,9 +52,9 @@ def telegram_bot_process(queue):
         # The bot will run with app.run_polling() which is already in the module
         asyncio.run(LeRobot(queue))
     except (KeyboardInterrupt, SystemExit):
-        print("Telegram bot process stopped")
+        logger.info("Telegram bot process stopped")
     except Exception as e:
-        print(f"Error in telegram bot process: {e}")
+        logger.error(f"Error in telegram bot process: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
@@ -80,7 +85,7 @@ if __name__ == "__main__":
         telegram_process.join()
     except KeyboardInterrupt:
         # Handle Ctrl+C gracefully
-        print("Main process interrupted")
+        logger.info("Main process interrupted")
         scrape_process.terminate()
         item_extractor_process.terminate()
         # intermediate_process.terminate()
@@ -89,4 +94,4 @@ if __name__ == "__main__":
         item_extractor_process.join()
         # intermediate_process.join()
         telegram_process.join()
-        print("All processes terminated")
+        logger.info("All processes terminated")

@@ -2,8 +2,12 @@ from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import db, os, configuration_values, requests
 import core
+from logger import get_logger
 
 VER = "0.6.0"
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -52,8 +56,7 @@ class LeRobot:
         job_queue.run_repeating(self.check_telegram_queue, interval=1, first=1)
         # Set the commands
 
-
-        print("Bot started. Head to your telegram and type /hello to check if it's running.")
+        logger.info("Bot started. Head to your telegram and type /hello to check if it's running.")
 
         self.app.run_polling()
 
@@ -140,7 +143,7 @@ class LeRobot:
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 
     async def send_new_post(self, content, url, text):
-        print(f"Sending new post: {content} - {url} - {text}")
+        logger.info(f"Sending new post: {content} - {url} - {text}")
         async with self.bot:
             await self.bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=40,
                                         write_timeout=40,
