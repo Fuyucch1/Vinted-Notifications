@@ -21,7 +21,8 @@ class ExcludeFilter(logging.Filter):
                 'Added job' in record.getMessage() or
                 'Adding job tentatively' in record.getMessage() or
                 'Removed job' in record.getMessage() or
-                'Scheduler started' in record.getMessage()):
+                'Scheduler started' in record.getMessage() or
+                'skipped: maximum number of running instances reached' in record.getMessage()):
             return False
 
         # Filter out httpx HTTP request logs
