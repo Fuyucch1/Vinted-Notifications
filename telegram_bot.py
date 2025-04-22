@@ -1,7 +1,9 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+from telegram.error import RetryAfter
 import db, configuration_values, requests
 import core
+import asyncio
 from logger import get_logger
 
 VER = "0.6.0"
@@ -206,12 +208,17 @@ class LeRobot:
 
     async def send_new_post(self, content, url, text):
         try:
-            logger.info(f"Sending new post: {content} - {url} - {text}")
             async with self.bot:
                 await self.bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=40,
                                             write_timeout=40,
                                             reply_markup=InlineKeyboardMarkup(
                                                 [[InlineKeyboardButton(text=text, url=url)]]))
+        except RetryAfter as e:
+            retry_after = e.retry_after
+            logger.error(f"Flood control exceeded. Retrying in {retry_after + 2} seconds")
+            await asyncio.sleep(retry_after + 2)
+            # Retry sending the message
+            await self.send_new_post(content, url, text)
         except Exception as e:
             logger.error(f"Error sending new post: {str(e)}", exc_info=True)
 
