@@ -73,7 +73,7 @@ class Item:
         """
         return hash(('id', self.id))
 
-    def is_new_item(self, minutes=5):
+    def is_new_item(self, minutes=20):
         """
         Check if this item is newly listed.
 

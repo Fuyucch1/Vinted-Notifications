@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 def scraper_process(items_queue):
     logger.info("Scrape process started")
     scraper_scheduler = BackgroundScheduler()
-    scraper_scheduler.add_job(core.process_items, 'interval', seconds=1, args=[items_queue], name="scraper")
+    scraper_scheduler.add_job(core.process_items, 'interval', seconds=60, args=[items_queue], name="scraper")
     scraper_scheduler.start()
     try:
         # Keep the process running
