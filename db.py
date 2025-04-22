@@ -111,7 +111,7 @@ def add_query_to_db(query):
     try:
         conn = sqlite3.connect("vinted.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO queries VALUES (?, 0)", (query,))
+        cursor.execute("INSERT INTO queries VALUES (?)", (query,))
         conn.commit()
     except Exception:
         print_exc()
