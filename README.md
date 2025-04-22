@@ -35,16 +35,6 @@ pip install -r requirements.txt
 `CHAT_ID` can be obtained by sending a message to the bot and then calling the `getUpdates` method on the Telegram API at this address :
 ```https://api.telegram.org/bot[TOKEN]/getUpdates```. Don't forget to replace `[TOKEN]` with your bot's token.
 
-### Proxy Configuration (Optional)
-
-The bot supports using a Squid proxy with authentication to avoid Vinted's rate limits:
-
-`SQUID_PROXY` - The URL of your Squid proxy (e.g., "http://proxy.example.com:3128" or just "proxy.example.com:3128")\
-`SQUID_USERNAME` - Username for Squid proxy authentication\
-`SQUID_PASSWORD` - Password for Squid proxy authentication
-
-Leave these values empty to disable proxy usage.
-
 4. Run the bot with
 
 ```py
