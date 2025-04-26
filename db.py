@@ -11,6 +11,15 @@ def create_sqlite_db():
         cursor.execute("CREATE TABLE items (item NUMERIC, price NUMERIC, timestamp NUMERIC, query TEXT)")
         cursor.execute("CREATE TABLE queries (query TEXT, last_item NUMERIC)")
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
+        # Add a parameters table
+        cursor.execute("CREATE TABLE parameters (key TEXT, value TEXT)")
+        # Add desired keys to the parameters table
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_enabled", "False"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_token", ""))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_chat_id", ""))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_enabled", "False"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_port", "8080"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_max_items", "100"))
         conn.commit()
     except Exception:
         print_exc()
