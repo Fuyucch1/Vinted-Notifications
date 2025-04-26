@@ -1,7 +1,6 @@
 import sqlite3
 from traceback import print_exc
 
-
 def create_sqlite_db():
     conn = None
     try:
@@ -13,13 +12,24 @@ def create_sqlite_db():
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
         # Add a parameters table
         cursor.execute("CREATE TABLE parameters (key TEXT, value TEXT)")
-        # Add desired keys to the parameters table
+        # Telegram parameters
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_enabled", "False"))
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_token", ""))
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_chat_id", ""))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_process_running", "False"))
+
+        # RSS parameters
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_enabled", "False"))
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_port", "8080"))
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_max_items", "100"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_process_running", "False"))
+
+        # Version of the bot
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("version", "1.0.0"))
+        # GitHub URL
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)",
+                       ("github_url", "https://github.com/Fuyucch1/Vinted-Notifications"))
+
         conn.commit()
     except Exception:
         print_exc()
@@ -241,6 +251,68 @@ def clear_allowlist():
         conn.commit()
     except Exception:
         print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_parameter(key):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM parameters WHERE key=?", (key,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def set_parameter(key, value):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE parameters SET value=? WHERE key=?", (value, key))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_all_parameters():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM parameters")
+        return {row[0]: row[1] for row in cursor.fetchall()}
+    except Exception:
+        print_exc()
+        return {}
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_items(limit=50, query=None):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        if query:
+            cursor.execute("SELECT * FROM items WHERE query=? ORDER BY timestamp DESC LIMIT ?", (query, limit))
+        else:
+            cursor.execute("SELECT * FROM items ORDER BY timestamp DESC LIMIT ?", (limit,))
+        return cursor.fetchall()
+    except Exception:
+        print_exc()
+        return []
     finally:
         if conn:
             conn.close()

@@ -1,4 +1,4 @@
-import db, configuration_values
+import db, configuration_values, requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
@@ -248,3 +248,29 @@ def clear_item_queue(items_queue, new_items_queue):
                 new_items_queue.put((content, item.url, "Open Vinted"))
                 # Add the item to the db
                 db.add_item_to_db(id, query, price, timestamp)
+
+
+def check_version():
+    """
+    Check if the application is up to date
+    """
+    try:
+        # Get URL from the database
+        github_url = db.get_parameter("github_url")
+        # Get version from the database
+        ver = db.get_parameter("version")
+        # Get latest version from the repository
+        url = f"{github_url}/releases/latest"
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            latest_version = response.url.split('/')[-1]
+            is_up_to_date = (ver == latest_version)
+            return is_up_to_date, ver, latest_version, github_url
+        else:
+            # If we can't check, assume it's up to date
+            return True, ver, ver, github_url
+    except Exception as e:
+        logger.error(f"Error checking for new version: {str(e)}", exc_info=True)
+        # If we can't check, assume it's up to date
+        return True, ver, ver, github_url

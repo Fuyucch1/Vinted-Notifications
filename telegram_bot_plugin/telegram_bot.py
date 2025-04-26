@@ -1,21 +1,17 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.error import RetryAfter
-import db, configuration_values, requests
-import core
-import asyncio
+import db, core, asyncio
 from logger import get_logger
-
-VER = "0.6.0"
 
 # Get logger for this module
 logger = get_logger(__name__)
 
-
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
+        ver = db.get_parameter("version")
         await update.message.reply_text(
-            f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {VER}.\n')
+            f'Hello {update.effective_user.first_name}! Vinted-Notifications is running under version {ver}.\n')
     except Exception as e:
         logger.error(f"Error in hello command: {str(e)}", exc_info=True)
         try:
@@ -28,12 +24,11 @@ class LeRobot:
     def __init__(self, queue):
         from telegram import Bot
         from telegram.ext import ApplicationBuilder, CommandHandler
-        import configuration_values
 
         try:
 
-            self.bot = Bot(configuration_values.TOKEN)
-            self.app = ApplicationBuilder().token(configuration_values.TOKEN).build()
+            self.bot = Bot(db.get_parameter("telegram_token"))
+            self.app = ApplicationBuilder().token(db.get_parameter("telegram_token")).build()
 
             # Create the item queue to send to telegram
             self.new_items_queue = queue
@@ -207,7 +202,8 @@ class LeRobot:
     async def send_new_post(self, content, url, text):
         try:
             async with self.bot:
-                await self.bot.send_message(configuration_values.CHAT_ID, content, parse_mode="HTML", read_timeout=40,
+                await self.bot.send_message(db.get_parameter("telegram_chat_id"), content, parse_mode="HTML",
+                                            read_timeout=40,
                                             write_timeout=40,
                                             reply_markup=InlineKeyboardMarkup(
                                                 [[InlineKeyboardButton(text=text, url=url)]]))
@@ -223,12 +219,11 @@ class LeRobot:
     async def check_version(self, context: ContextTypes.DEFAULT_TYPE):
         try:
             # get latest version from the repository
-            url = f"https://github.com/Fuyucch1/Vinted-Notifications/releases/latest"
-            response = requests.get(url)
+            should_update, VER, latest_version, url = core.check_version()
 
-            if response.status_code == 200:
-                if VER != response.url.split('/')[-1]:
-                    await self.send_new_post("A new version is available, please update the bot.", url, "Open Github")
+            if not should_update:
+                await self.send_new_post(f"Version {latest_version} is now available. Please update the bot.", url,
+                                         "Open Github")
         except Exception as e:
             logger.error(f"Error checking for new version: {str(e)}", exc_info=True)
 
