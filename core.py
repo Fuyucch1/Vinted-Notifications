@@ -223,14 +223,18 @@ def clear_item_queue(items_queue, new_items_queue):
         for item in data:
             # Get the id of the item to check if it is already in the db
             id = item.id
+            # Get the timestamp of the item
+            timestamp = item.created_at_ts
+            # Get the price of the item
+            price = item.price
             # If already in db, pass
-            if db.is_item_in_db(id) != 0:
+            if db.get_last_timestamp(query) > timestamp:
                 pass
             # If there's an allowlist and
-            # If the user's country is not in the allowlist, we add it to the db and do nothing else
+            # If the user's country is not in the allowlist, we just update the timestamp
             elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
                     db.get_allowlist() + ["XX"]):
-                db.add_item_to_db(id, query)
+                db.update_last_timestamp(query, timestamp)
                 pass
             else:
                 # We create the message
@@ -243,4 +247,4 @@ def clear_item_queue(items_queue, new_items_queue):
                 # add the item to the queue
                 new_items_queue.put((content, item.url, "Open Vinted"))
                 # Add the item to the db
-                db.add_item_to_db(id, query)
+                db.add_item_to_db(id, query, price, timestamp)

@@ -28,11 +28,9 @@ class LeRobot:
     def __init__(self, queue):
         from telegram import Bot
         from telegram.ext import ApplicationBuilder, CommandHandler
-        import db, os, configuration_values
+        import configuration_values
 
         try:
-            if not os.path.exists("vinted.db"):
-                db.create_sqlite_db()
 
             self.bot = Bot(configuration_values.TOKEN)
             self.app = ApplicationBuilder().token(configuration_values.TOKEN).build()

@@ -5,10 +5,11 @@ from traceback import print_exc
 def create_sqlite_db():
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE items (item NUMERIC, query TEXT)")
-        cursor.execute("CREATE TABLE queries (query TEXT)")
+        # I'm not respecting normal forms yet, but I will, I promise
+        cursor.execute("CREATE TABLE items (item NUMERIC, price NUMERIC, timestamp NUMERIC, query TEXT)")
+        cursor.execute("CREATE TABLE queries (query TEXT, last_item NUMERIC)")
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
         conn.commit()
     except Exception:
@@ -18,10 +19,10 @@ def create_sqlite_db():
             conn.close()
 
 
-def is_item_in_db(id):
+def is_item_in_db_by_id(id):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT() FROM items WHERE item=?", (id,))
         return cursor.fetchone()[0]
@@ -32,13 +33,26 @@ def is_item_in_db(id):
             conn.close()
 
 
-def add_item_to_db(id, query):
+def get_last_timestamp(query):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        # Insert into db the id and the query related to the item
-        cursor.execute("INSERT INTO items VALUES (?, ?)", (id, query))
+        cursor.execute("SELECT last_item FROM queries WHERE query=?", (query,))
+        return cursor.fetchone()[0]
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def update_last_timestamp(query, timestamp):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE queries SET last_item=? WHERE query=?", (timestamp, query))
         conn.commit()
     except Exception:
         print_exc()
@@ -46,6 +60,22 @@ def add_item_to_db(id, query):
         if conn:
             conn.close()
 
+
+def add_item_to_db(id, query, price, timestamp):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        # Insert into db the id and the query related to the item
+        cursor.execute("INSERT INTO items VALUES (?, ?, ?, ?)", (id, price, timestamp, query))
+        # Update the last item for the query
+        cursor.execute("UPDATE queries SET last_item=? WHERE query=?", (timestamp, query))
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
 
 def clean_db():
     conn = None
@@ -58,7 +88,7 @@ def clean_db():
     queries = get_queries()
     # For each query we keep the last 100 items
     for query in queries:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("SELECT item FROM items WHERE query=? ORDER BY ROWID DESC LIMIT -1 OFFSET 100", (query[0],))
         items = cursor.fetchall()
@@ -68,17 +98,16 @@ def clean_db():
         conn.close()
 
     # Remove all items that do not match any query
-    conn = sqlite3.connect("vinted.db")
+    conn = sqlite3.connect("vinted_notifications.db")
     cursor = conn.cursor()
     cursor.execute("DELETE FROM items WHERE query NOT IN (SELECT query FROM queries)")
     conn.commit()
     conn.close()
 
-
 def get_queries():
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM queries")
         return cursor.fetchall()
@@ -88,11 +117,10 @@ def get_queries():
         if conn:
             conn.close()
 
-
 def is_query_in_db(searched_text):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         # replace spaces in searched_text by % to match any query containing the searched text
         searched_text = searched_text.replace(' ', '+')
@@ -106,11 +134,10 @@ def is_query_in_db(searched_text):
         if conn:
             conn.close()
 
-
 def add_query_to_db(query):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("INSERT INTO queries (query) VALUES (?)", (query,))
         conn.commit()
@@ -120,11 +147,10 @@ def add_query_to_db(query):
         if conn:
             conn.close()
 
-
 def remove_query_from_db(query_number):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         query_string = f"SELECT query, rowid FROM (SELECT query, rowid, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={query_number}"
         cursor.execute(query_string)
@@ -142,7 +168,7 @@ def remove_query_from_db(query_number):
 def remove_all_queries_from_db():
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM queries")
         cursor.execute("DELETE FROM items")
@@ -157,7 +183,7 @@ def remove_all_queries_from_db():
 def add_to_allowlist(country):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("INSERT INTO allowlist VALUES (?)", (country,))
         conn.commit()
@@ -170,7 +196,7 @@ def add_to_allowlist(country):
 def remove_from_allowlist(country):
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM allowlist WHERE country=?", (country,))
         conn.commit()
@@ -183,7 +209,7 @@ def remove_from_allowlist(country):
 def get_allowlist():
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM allowlist")
         # Get list of countries
@@ -200,7 +226,7 @@ def get_allowlist():
 def clear_allowlist():
     conn = None
     try:
-        conn = sqlite3.connect("vinted.db")
+        conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM allowlist")
         conn.commit()

@@ -1,9 +1,9 @@
 import multiprocessing
 from apscheduler.schedulers.background import BackgroundScheduler
-import time, core
+import time, core, os, db
 from logger import get_logger
 import configuration_values
-from rss_feed import rss_feed_process
+from rss_feed_plugin.rss_feed import rss_feed_process
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -55,7 +55,7 @@ def telegram_bot_process(queue):
     import asyncio
     try:
         # Import LeRobot
-        from telegram_bot import LeRobot
+        from telegram_bot_plugin.telegram_bot import LeRobot
         # The bot will run with app.run_polling() which is already in the module
         asyncio.run(LeRobot(queue))
     except (KeyboardInterrupt, SystemExit):
@@ -65,6 +65,11 @@ def telegram_bot_process(queue):
 
 
 if __name__ == "__main__":
+
+    # db check
+    if not os.path.exists("../vinted.db"):
+        db.create_sqlite_db()
+
     # Create a shared queue
     items_queue = multiprocessing.Queue()
     new_items_queue = multiprocessing.Queue()
