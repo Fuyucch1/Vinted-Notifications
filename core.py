@@ -123,7 +123,8 @@ def process_add_country(country):
         return "Invalid country code", country_list
 
     # Check if the country is already in the allowlist
-    if country.upper() in country_list:
+    # If country_list is 0, it means the allowlist is empty
+    if country_list != 0 and country.upper() in country_list:
         return f'Country "{country.upper()}" already in allowlist.', country_list
 
     # Add the country to the allowlist
@@ -224,11 +225,14 @@ def clear_item_queue(items_queue, new_items_queue):
             # Get the id of the item to check if it is already in the db
             id = item.id
             # Get the timestamp of the item
-            timestamp = item.created_at_ts
+            timestamp = item.raw_timestamp
             # Get the price of the item
             price = item.price
             # If already in db, pass
-            if db.get_last_timestamp(query) > timestamp:
+
+            last_query_timestamp = db.get_last_timestamp(query)
+
+            if last_query_timestamp is not None and last_query_timestamp >= timestamp:
                 pass
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we just update the timestamp
