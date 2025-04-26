@@ -18,14 +18,6 @@ CHECK_PROXIES = False
 # Web UI port
 WEB_UI_PORT = 8000
 
-#### RSS FEED SETTINGS ####
-# RSS feed port
-RSS_PORT = 8001
-# Maximum number of items to keep in the RSS feed
-RSS_MAX_ITEMS = 50
-# Enable/disable RSS feed
-RSS_ENABLED = True
-
 #### HTTP HEADERS ####
 # User agents for rotating to avoid detection
 USER_AGENTS = [

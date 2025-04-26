@@ -70,6 +70,7 @@ def telegram_bot_process(queue):
 def monitor_processes(telegram_queue, rss_queue):
     global telegram_process, rss_process
 
+    ### TELEGRAM ###
     # Check telegram process status
     telegram_should_run = db.get_parameter('telegram_process_running') == 'True'
     # Check if the telegram token and chat ID are set
@@ -91,6 +92,7 @@ def monitor_processes(telegram_queue, rss_queue):
         telegram_process.join()
         telegram_process = None
 
+    ### RSS ###
     # Check RSS process status
     rss_should_run = db.get_parameter('rss_process_running') == 'True'
     rss_is_running = rss_process is not None and rss_process.is_alive()
