@@ -54,16 +54,12 @@ class LeRobot:
             job_queue.run_once(self.set_commands, when=1)
             # Every day we check for a new version
             job_queue.run_repeating(self.check_version, interval=86400, first=1)
-            # Every day we clean the db
-            job_queue.run_repeating(self.clean_db, interval=86400, first=1)
             # Every second we check for new posts to send to telegram
             job_queue.run_repeating(self.check_telegram_queue, interval=1, first=1)
 
             self.app.run_polling()
         except Exception as e:
             logger.error(f"Error initializing bot: {str(e)}", exc_info=True)
-
-    # Verify if the bot is running
 
     ### QUERIES ###
 
@@ -226,12 +222,6 @@ class LeRobot:
                                          "Open Github")
         except Exception as e:
             logger.error(f"Error checking for new version: {str(e)}", exc_info=True)
-
-    async def clean_db(self, context: ContextTypes.DEFAULT_TYPE):
-        try:
-            db.clean_db()
-        except Exception as e:
-            logger.error(f"Error cleaning database: {str(e)}", exc_info=True)
 
     async def check_telegram_queue(self, context: ContextTypes.DEFAULT_TYPE):
         try:
