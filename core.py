@@ -221,7 +221,7 @@ def clear_item_queue(items_queue, new_items_queue):
     """
     if not items_queue.empty():
         data, query_id = items_queue.get()
-        for item in data:
+        for item in reversed(data):
 
             # If already in db, pass
             last_query_timestamp = db.get_last_timestamp(query_id)
