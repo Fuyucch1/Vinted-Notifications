@@ -324,3 +324,85 @@ def get_items(limit=50, query=None):
     finally:
         if conn:
             conn.close()
+
+
+def get_total_items_count():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM items")
+        return cursor.fetchone()[0]
+    except Exception:
+        print_exc()
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_total_queries_count():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM queries")
+        return cursor.fetchone()[0]
+    except Exception:
+        print_exc()
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_last_found_item():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT i.item, i.title, i.price, i.currency, i.timestamp, q.query, i.photo_url FROM items i JOIN queries q ON i.query_id = q.id ORDER BY i.timestamp DESC LIMIT 1")
+        return cursor.fetchone()
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_items_per_day():
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+
+        # Get total items
+        cursor.execute("SELECT COUNT(*) FROM items")
+        total_items = cursor.fetchone()[0]
+
+        if total_items == 0:
+            return 0
+
+        # Get earliest and latest timestamps
+        cursor.execute("SELECT MIN(timestamp), MAX(timestamp) FROM items")
+        min_timestamp, max_timestamp = cursor.fetchone()
+
+        # Calculate number of days (add 1 to include both start and end days)
+        import datetime
+        min_date = datetime.datetime.fromtimestamp(min_timestamp).date()
+        max_date = datetime.datetime.fromtimestamp(max_timestamp).date()
+        days_diff = (max_date - min_date).days + 1
+
+        # Ensure at least 1 day to avoid division by zero
+        days_diff = max(1, days_diff)
+
+        # Calculate items per day
+        return round(total_items / days_diff, 1)
+    except Exception:
+        print_exc()
+        return 0
+    finally:
+        if conn:
+            conn.close()
