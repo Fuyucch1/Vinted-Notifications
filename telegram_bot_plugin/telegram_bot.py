@@ -55,7 +55,7 @@ class LeRobot:
             # Every day we check for a new version
             job_queue.run_repeating(self.check_version, interval=86400, first=1)
             # Every second we check for new posts to send to telegram
-            job_queue.run_repeating(self.check_telegram_queue, interval=1, first=1)
+            job_queue.run_once(self.check_telegram_queue, when=1)
 
             self.app.run_polling()
         except Exception as e:
@@ -226,9 +226,13 @@ class LeRobot:
 
     async def check_telegram_queue(self, context: ContextTypes.DEFAULT_TYPE):
         try:
-            if not self.new_items_queue.empty():
-                content, url, text = self.new_items_queue.get()
-                await self.send_new_post(content, url, text)
+            while 1:
+                if not self.new_items_queue.empty():
+                    content, url, text = self.new_items_queue.get()
+                    await self.send_new_post(content, url, text)
+                else:
+                    await asyncio.sleep(0.1)
+                    pass
         except Exception as e:
             logger.error(f"Error checking telegram queue: {str(e)}", exc_info=True)
 
