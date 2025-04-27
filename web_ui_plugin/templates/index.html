@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Vinted Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+</div>
+
+<!-- Statistics Section -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <i class="bi bi-box-seam text-primary" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Total Items</h5>
+                <h2 class="display-4 fw-bold text-primary">{{ stats.total_items }}</h2>
+                <p class="card-text text-muted">Items grabbed for monitored queries so far</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <i class="bi bi-search text-success" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Active Queries</h5>
+                <h2 class="display-4 fw-bold text-success">{{ stats.total_queries }}</h2>
+                <p class="card-text text-muted">Queries being monitored</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <i class="bi bi-bar-chart-fill text-warning" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Items per Day</h5>
+                <h2 class="display-4 fw-bold text-warning">{{ stats.items_per_day }}</h2>
+                <p class="card-text text-muted">Average items found daily</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <i class="bi bi-clock-history text-info" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="card-title">Last Found Item</h5>
+                {% if stats.last_item %}
+                <div class="d-flex align-items-center justify-content-center">
+                    {% if stats.last_item.photo_url %}
+                    <img src="{{ stats.last_item.photo_url }}" alt="{{ stats.last_item.title }}"
+                         class="img-thumbnail me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                    {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center me-2"
+                         style="width: 50px; height: 50px;">
+                        <i class="bi bi-image text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <div class="text-start">
+                        <h6 class="mb-0 text-truncate" style="max-width: 150px;">
+                            <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
+                               class="text-decoration-none">
+                                {{ stats.last_item.title }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">{{ stats.last_item.timestamp }}</small>
+                        <div class="mt-1">
+                            <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
+                               class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-box-arrow-up-right"></i> View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No items found yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-speedometer2 me-2 text-info"></i>
+                <h5 class="card-title mb-0">Process Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0">Telegram Bot</h6>
+                                <small class="text-muted">{{ 'Running' if telegram_running else 'Stopped' }}</small>
+                            </div>
+                            <div>
+                                {% if telegram_running %}
+                                <button class="btn btn-sm btn-danger process-control" data-process="telegram"
+                                        data-action="stop">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                {% else %}
+                                <button class="btn btn-sm btn-success process-control" data-process="telegram"
+                                        data-action="start">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0">RSS Feed</h6>
+                                <small class="text-muted">
+                                    {% if rss_running %}
+                                    <a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{
+                                        params.rss_port }}</a>
+                                    {% else %}
+                                    Stopped
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div>
+                                {% if rss_running %}
+                                <button class="btn btn-sm btn-danger process-control" data-process="rss"
+                                        data-action="stop">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                                {% else %}
+                                <button class="btn btn-sm btn-success process-control" data-process="rss"
+                                        data-action="start">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-box me-2 text-info"></i>
+                    <h5 class="card-title mb-0">Recent Items</h5>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="btn-group me-2" role="group" aria-label="View toggle">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
+                            <i class="bi bi-grid-3x3-gap-fill"></i> Cards
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="listViewBtn">
+                            <i class="bi bi-list-ul"></i> List
+                        </button>
+                    </div>
+                    <a href="/items" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Card View -->
+                <div class="row" id="cardView">
+                    {% for item in items %}
+                    <div class="col-md-4 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            {% if item.photo_url %}
+                            <img src="{{ item.photo_url }}" class="card-img-top" alt="{{ item.title }}"
+                                 style="height: 150px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                 style="height: 150px;">
+                                <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body p-2">
+                                <h6 class="card-title" style="height: 40px; overflow: hidden; font-size: 0.9rem;">
+                                    <strong>{{ item.title }}</strong></h6>
+                                <p class="card-text small mb-1">
+                                    Price: {{ item.price }} {{ item.currency }}<br>
+                                    Query: {{ item.query|truncate(20) }}<br>
+                                    Date: {{ item.timestamp }}
+                                </p>
+                            </div>
+                            <div class="card-footer bg-white p-2">
+                                <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank"
+                                   class="btn btn-sm btn-primary w-100">
+                                    <i class="bi bi-box-arrow-up-right"></i> View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center py-5">
+                        <p class="text-muted">No items found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- List View -->
+                <div class="table-responsive" id="listView" style="display: none;">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Title</th>
+                            <th>Price</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td style="width: 60px;">
+                                {% if item.photo_url %}
+                                <img src="{{ item.photo_url }}" alt="{{ item.title }}" class="img-thumbnail"
+                                     style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center"
+                                     style="width: 50px; height: 50px;">
+                                    <i class="bi bi-image text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.title }}</td>
+                            <td>{{ item.price }} {{ item.currency }}</td>
+                            <td>{{ item.timestamp }}</td>
+                            <td>
+                                <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-box-arrow-up-right"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No items found</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-search me-2 text-info"></i>
+                    <h5 class="card-title mb-0">Queries</h5>
+                </div>
+                <a href="/queries" class="btn btn-sm btn-outline-primary">Manage</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Query</th>
+                            <th>Last Found Item</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for query in queries %}
+                        <tr>
+                            <td>{{ query.id }}</td>
+                            <td>{{ query.display }}</td>
+                            <td>{{ query.last_found_item }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center">No queries found</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Process control buttons
+        const processButtons = document.querySelectorAll('.process-control');
+        processButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const process = this.getAttribute('data-process');
+                const action = this.getAttribute('data-action');
+
+                // Disable button during request
+                this.disabled = true;
+
+                fetch(`/control/${process}/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Show alert
+                        const alertClass = data.status === 'success' ? 'success' :
+                            data.status === 'warning' ? 'warning' : 'danger';
+
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert alert-${alertClass} alert-dismissible fade show flash-message`;
+                        alertDiv.setAttribute('role', 'alert');
+                        alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+
+                        document.querySelector('.flash-messages').appendChild(alertDiv);
+
+                        // Auto-dismiss after 5 seconds
+                        setTimeout(() => {
+                            const bsAlert = new bootstrap.Alert(alertDiv);
+                            bsAlert.close();
+                        }, 5000);
+
+                        // Update UI dynamically instead of reloading the page
+                        if (data.status === 'success') {
+                            // Get the parent container of the button
+                            const buttonContainer = this.parentElement;
+                            const statusContainer = buttonContainer.parentElement.querySelector('small');
+
+                            // Update button and status based on the action
+                            if (action === 'start') {
+                                // Change button to Stop
+                                this.className = 'btn btn-sm btn-danger process-control';
+                                this.setAttribute('data-action', 'stop');
+                                this.innerHTML = '<i class="bi bi-stop-fill"></i> Stop';
+
+                                // Update status text for RSS feed with hyperlink
+                                if (process === 'rss') {
+                                    statusContainer.innerHTML = '<a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{ params.rss_port }}</a>';
+                                } else {
+                                    statusContainer.textContent = 'Running';
+                                }
+                            } else if (action === 'stop') {
+                                // Change button to Start
+                                this.className = 'btn btn-sm btn-success process-control';
+                                this.setAttribute('data-action', 'start');
+                                this.innerHTML = '<i class="bi bi-play-fill"></i> Start';
+
+                                // Update status text
+                                statusContainer.textContent = 'Stopped';
+                            }
+                        }
+
+                        // Re-enable the button
+                        this.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.disabled = false;
+                    });
+            });
+        });
+
+        // View toggle functionality
+        const cardViewBtn = document.getElementById('cardViewBtn');
+        const listViewBtn = document.getElementById('listViewBtn');
+        const cardView = document.getElementById('cardView');
+        const listView = document.getElementById('listView');
+
+        // Load saved view preference from localStorage
+        const viewPreference = localStorage.getItem('vintedDashboardViewPreference') || 'card';
+
+        // Function to set active view
+        function setActiveView(view) {
+            if (view === 'card') {
+                cardView.style.display = 'flex';
+                listView.style.display = 'none';
+                cardViewBtn.classList.add('active');
+                listViewBtn.classList.remove('active');
+                localStorage.setItem('vintedDashboardViewPreference', 'card');
+            } else {
+                cardView.style.display = 'none';
+                listView.style.display = 'block';
+                listViewBtn.classList.add('active');
+                cardViewBtn.classList.remove('active');
+                localStorage.setItem('vintedDashboardViewPreference', 'list');
+            }
+        }
+
+        // Initialize with saved preference
+        setActiveView(viewPreference);
+
+        // Add event listeners
+        cardViewBtn.addEventListener('click', function () {
+            setActiveView('card');
+        });
+
+        listViewBtn.addEventListener('click', function () {
+            setActiveView('list');
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - Vinted Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Configuration</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-gear me-2 text-info"></i>
+                <h5 class="card-title mb-0">Application Settings</h5>
+            </div>
+            <div class="card-body">
+                <form action="/update_config" method="post">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="bi bi-gear-fill me-2 text-info"></i>
+                                    <h5 class="card-title mb-0">System Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="items_per_query" class="form-label">Items Per Query</label>
+                                                <input type="number" class="form-control" id="items_per_query"
+                                                       name="items_per_query" value="{{ params.items_per_query }}">
+                                                <small class="form-text text-muted">Maximum number of items to fetch per
+                                                    query</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="query_refresh_delay" class="form-label">Query Refresh Delay
+                                                    (seconds)</label>
+                                                <input type="number" class="form-control" id="query_refresh_delay"
+                                                       name="query_refresh_delay"
+                                                       value="{{ params.query_refresh_delay }}">
+                                                <small class="form-text text-muted">Delay between query refreshes in
+                                                    seconds</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="bi bi-telegram me-2 text-info"></i>
+                                    <h5 class="card-title mb-0">Telegram Bot</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            {% if params.telegram_enabled == 'True' %}
+                                            <input class="form-check-input" type="checkbox" id="telegram_enabled"
+                                                   name="telegram_enabled" checked>
+                                            {% else %}
+                                            <input class="form-check-input" type="checkbox" id="telegram_enabled"
+                                                   name="telegram_enabled">
+                                            {% endif %}
+                                            <label class="form-check-label" for="telegram_enabled">
+                                                Auto Start
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="telegram_token" class="form-label">Bot Token</label>
+                                        <input type="text" class="form-control" id="telegram_token"
+                                               name="telegram_token" value="{{ params.telegram_token }}">
+                                        <small class="form-text text-muted">Get this from BotFather</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="telegram_chat_id" class="form-label">Chat ID</label>
+                                        <input type="text" class="form-control" id="telegram_chat_id"
+                                               name="telegram_chat_id" value="{{ params.telegram_chat_id }}">
+                                        <small class="form-text text-muted">The chat ID where notifications will be
+                                            sent</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="bi bi-rss me-2 text-info"></i>
+                                    <h5 class="card-title mb-0">RSS Feed</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            {% if params.rss_enabled == 'True' %}
+                                            <input class="form-check-input" type="checkbox" id="rss_enabled"
+                                                   name="rss_enabled" checked>
+                                            {% else %}
+                                            <input class="form-check-input" type="checkbox" id="rss_enabled"
+                                                   name="rss_enabled">
+                                            {% endif %}
+                                            <label class="form-check-label" for="rss_enabled">
+                                                Auto Start
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="rss_port" class="form-label">Port</label>
+                                        <input type="number" class="form-control" id="rss_port" name="rss_port"
+                                               value="{{ params.rss_port }}">
+                                        <small class="form-text text-muted">The port on which the RSS feed will be
+                                            served</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="rss_max_items" class="form-label">Maximum Items</label>
+                                        <input type="number" class="form-control" id="rss_max_items"
+                                               name="rss_max_items" value="{{ params.rss_max_items }}">
+                                        <small class="form-text text-muted">Maximum number of items to keep in the RSS
+                                            feed</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-toggles me-2 text-info"></i>
+                <h5 class="card-title mb-0">Process Control</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0">Telegram Bot</h6>
+                                <small class="text-muted process-status" data-process="telegram">Checking
+                                    status...</small>
+                            </div>
+                            <div>
+                                <button class="btn btn-success process-control" data-process="telegram"
+                                        data-action="start">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-danger process-control" data-process="telegram"
+                                        data-action="stop">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-0">RSS Feed</h6>
+                                <small class="text-muted process-status" data-process="rss">Checking status...</small>
+                            </div>
+                            <div>
+                                <button class="btn btn-success process-control" data-process="rss" data-action="start">
+                                    <i class="bi bi-play-fill"></i> Start
+                                </button>
+                                <button class="btn btn-danger process-control" data-process="rss" data-action="stop">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Process control buttons
+        const processButtons = document.querySelectorAll('.process-control');
+        processButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const process = this.getAttribute('data-process');
+                const action = this.getAttribute('data-action');
+
+                // Disable all buttons for this process
+                document.querySelectorAll(`.process-control[data-process="${process}"]`).forEach(btn => {
+                    btn.disabled = true;
+                });
+
+                fetch(`/control/${process}/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Show alert
+                        const alertClass = data.status === 'success' ? 'success' :
+                            data.status === 'warning' ? 'warning' : 'danger';
+
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert alert-${alertClass} alert-dismissible fade show flash-message`;
+                        alertDiv.setAttribute('role', 'alert');
+                        alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+
+                        document.querySelector('.flash-messages').appendChild(alertDiv);
+
+                        // Auto-dismiss after 5 seconds
+                        setTimeout(() => {
+                            const bsAlert = new bootstrap.Alert(alertDiv);
+                            bsAlert.close();
+                        }, 5000);
+
+                        // Update status
+                        checkProcessStatus();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Re-enable buttons
+                        document.querySelectorAll(`.process-control[data-process="${process}"]`).forEach(btn => {
+                            btn.disabled = false;
+                        });
+                    });
+            });
+        });
+
+        // Check process status
+        function checkProcessStatus() {
+            fetch('/control/status', {
+                method: 'GET'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Update status text
+                    document.querySelector('.process-status[data-process="telegram"]').textContent =
+                        data.telegram ? 'Running' : 'Stopped';
+                    document.querySelector('.process-status[data-process="rss"]').textContent =
+                        data.rss ? 'Running' : 'Stopped';
+
+                    // Update button visibility
+                    document.querySelector('.process-control[data-process="telegram"][data-action="start"]').style.display =
+                        data.telegram ? 'none' : 'inline-block';
+                    document.querySelector('.process-control[data-process="telegram"][data-action="stop"]').style.display =
+                        data.telegram ? 'inline-block' : 'none';
+                    document.querySelector('.process-control[data-process="rss"][data-action="start"]').style.display =
+                        data.rss ? 'none' : 'inline-block';
+                    document.querySelector('.process-control[data-process="rss"][data-action="stop"]').style.display =
+                        data.rss ? 'inline-block' : 'none';
+
+                    // Re-enable buttons
+                    document.querySelectorAll('.process-control').forEach(btn => {
+                        btn.disabled = false;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Set status to unknown
+                    document.querySelectorAll('.process-status').forEach(status => {
+                        status.textContent = 'Unknown';
+                    });
+                    // Re-enable all buttons
+                    document.querySelectorAll('.process-control').forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.display = 'inline-block';
+                    });
+                });
+        }
+
+        // Initial check
+        checkProcessStatus();
+    });
+</script>
+{% endblock %}

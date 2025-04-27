@@ -1,0 +1,316 @@
+/* Custom styles for Vinted Notifications Web UI - Vinted-inspired theme */
+
+/* Global styles */
+:root {
+    --primary-color: #09B1BA; /* Reverted to original teal color */
+    --secondary-color: #007782; /* Darker teal for secondary */
+    --accent-color: #FF5E5B;
+    --light-bg: #f9f9f9;
+    --dark-bg: #333333;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --text-color: #333;
+    --text-muted: #6c757d;
+    --border-color: #eeeeee;
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
+    --transition-speed: 0.3s;
+    --border-radius: 0.5rem;
+    --purple-color: #8A2BE2; /* Keep the purple color for gradient */
+}
+
+body {
+    color: var(--text-color);
+}
+
+/* Header and navigation styles - Vinted inspired */
+.app-header {
+    background: linear-gradient(to right, var(--primary-color), var(--purple-color));
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+.nav-link.active {
+    background-color: var(--primary-color);
+    border-radius: var(--border-radius);
+}
+
+.nav-link:hover:not(.active) {
+    background-color: rgba(9, 177, 186, 0.1);
+    color: var(--primary-color);
+    border-radius: var(--border-radius);
+}
+
+/* Vinted-style header button */
+.header-btn {
+    border-radius: var(--border-radius);
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.header-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Add some padding to the main content area */
+main {
+    padding-bottom: 2rem;
+}
+
+/* Vinted-style card styles */
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.card {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+/* Vinted-style product cards */
+#cardView .card {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+#cardView .card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#cardView .card-body {
+    padding: 0.75rem;
+}
+
+#cardView .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    height: auto;
+    max-height: 2.4rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+#cardView .card-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+#cardView .card-footer {
+    background-color: white;
+    border-top: 1px solid var(--border-color);
+    padding: 0.75rem;
+}
+
+/* Style for table hover - Vinted inspired */
+.table-hover tbody tr:hover {
+    background-color: rgba(9, 177, 186, 0.05);
+}
+
+/* Style for process status indicators */
+.process-status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+}
+
+/* Vinted-style button styles */
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-icon {
+    padding: 0.25rem 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Vinted-style view toggle buttons */
+.btn-group .btn {
+    border-radius: var(--border-radius);
+    margin: 0 2px;
+}
+
+.btn-group .btn.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Vinted-style flash messages */
+.flash-message {
+    box-shadow: var(--shadow-md);
+    border-radius: var(--border-radius);
+    border: none;
+}
+
+/* Vinted-style form controls */
+.form-control {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(9, 177, 186, 0.15);
+}
+
+.form-select {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+}
+
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(9, 177, 186, 0.15);
+}
+
+/* Vinted-style switches */
+.form-switch .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Vinted-style modal dialogs */
+.modal-content {
+    border-radius: var(--border-radius);
+    border: none;
+    overflow: hidden;
+}
+
+.modal-header {
+    background-color: white;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+    background-color: white;
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+}
+
+/* Vinted-style footer */
+.footer {
+    background-color: white;
+    border-top: 1px solid var(--border-color);
+    padding: 1.5rem 0;
+}
+
+.footer a {
+    color: var(--primary-color);
+}
+
+.footer a:hover {
+    color: var(--secondary-color) !important;
+    text-decoration: underline !important;
+}
+
+/* Vinted-style badges */
+.badge {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+    border-radius: 1rem;
+}
+
+.badge.bg-secondary {
+    background-color: #f2f2f2 !important;
+    color: var(--text-color) !important;
+}
+
+.badge.bg-success {
+    background-color: var(--primary-color) !important;
+}
+
+/* Vinted-style list view */
+#listView .table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#listView .table th {
+    border-top: none;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+#listView .table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+#listView .img-thumbnail {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .btn {
+        margin-bottom: 0.5rem;
+    }
+
+    .app-header .version-info {
+        display: none !important;
+    }
+
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+}
