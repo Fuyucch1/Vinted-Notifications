@@ -51,7 +51,6 @@ def process_query(query):
         db.add_query_to_db(processed_query)
         return "Query added.", True
 
-
 def get_formatted_query_list():
     """
     Get a formatted list of all queries in the database.
@@ -62,14 +61,15 @@ def get_formatted_query_list():
     all_queries = db.get_queries()
     queries_keywords = []
     for query in all_queries:
-        parsed_url = urlparse(query[0])
+        parsed_url = urlparse(query[1])
         query_params = parse_qs(parsed_url.query)
 
         # Extract the value of 'search_text'
         search_text = query_params.get('search_text', [None])
 
         if search_text[0] is None:
-            queries_keywords.append(query)
+            # Use query text instead of the whole query object
+            queries_keywords.append([query[1]])
         else:
             queries_keywords.append(search_text)
 
@@ -207,11 +207,11 @@ def process_items(queue):
 
     # for each keyword we parse data
     for query in all_queries:
-        all_items = vinted.items.search(query[0])
+        all_items = vinted.items.search(query[1])
         # Filter to only include new items. This should reduce the amount of db calls.
         data = [item for item in all_items if item.is_new_item()]
         queue.put((data, query[0]))
-        logger.info(f"Scraped {len(data)} items for query: {query[0]}")
+        logger.info(f"Scraped {len(data)} items for query: {query[1]}")
 
 
 def clear_item_queue(items_queue, new_items_queue):
@@ -220,25 +220,27 @@ def clear_item_queue(items_queue, new_items_queue):
     This function is scheduled to run frequently.
     """
     if not items_queue.empty():
-        data, query = items_queue.get()
+        data, query_id = items_queue.get()
         for item in data:
-            # Get the id of the item to check if it is already in the db
+            # Get the id of the item
             id = item.id
             # Get the timestamp of the item
             timestamp = item.raw_timestamp
             # Get the price of the item
             price = item.price
+            # Get the title of the item
+            title = item.title
+
             # If already in db, pass
-
-            last_query_timestamp = db.get_last_timestamp(query)
-
+            last_query_timestamp = db.get_last_timestamp(query_id)
             if last_query_timestamp is not None and last_query_timestamp >= timestamp:
                 pass
+
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we just update the timestamp
             elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
                     db.get_allowlist() + ["XX"]):
-                db.update_last_timestamp(query, timestamp)
+                db.update_last_timestamp(query_id, timestamp)
                 pass
             else:
                 # We create the message
@@ -251,7 +253,7 @@ def clear_item_queue(items_queue, new_items_queue):
                 # add the item to the queue
                 new_items_queue.put((content, item.url, "Open Vinted"))
                 # Add the item to the db
-                db.add_item_to_db(id, query, price, timestamp)
+                db.add_item_to_db(id, title, query_id, price, timestamp)
 
 
 def check_version():

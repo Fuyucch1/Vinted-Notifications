@@ -1,14 +1,21 @@
 import sqlite3
 from traceback import print_exc
 
+
+def get_db_connection():
+    conn = sqlite3.connect("vinted_notifications.db")
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
 def create_sqlite_db():
     conn = None
     try:
-        conn = sqlite3.connect("vinted_notifications.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
-        # I'm not respecting normal forms yet, but I will, I promise
-        cursor.execute("CREATE TABLE items (item NUMERIC, price NUMERIC, timestamp NUMERIC, query TEXT)")
-        cursor.execute("CREATE TABLE queries (query TEXT, last_item NUMERIC)")
+        # Using proper foreign key relationship between items and queries
+        cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC)")
+        cursor.execute(
+            "CREATE TABLE items (item NUMERIC, title TEXT, price NUMERIC, timestamp NUMERIC, query_id INTEGER, FOREIGN KEY(query_id) REFERENCES queries(id))")
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
         # Add a parameters table
         cursor.execute("CREATE TABLE parameters (key TEXT, value TEXT)")
@@ -52,26 +59,30 @@ def is_item_in_db_by_id(id):
             conn.close()
 
 
-def get_last_timestamp(query):
+def get_last_timestamp(query_id):
     conn = None
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT last_item FROM queries WHERE query=?", (query,))
-        return cursor.fetchone()[0]
+        cursor.execute("SELECT last_item FROM queries WHERE id=?", (query_id,))
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        return None
     except Exception:
         print_exc()
+        return None
     finally:
         if conn:
             conn.close()
 
 
-def update_last_timestamp(query, timestamp):
+def update_last_timestamp(query_id, timestamp):
     conn = None
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("UPDATE queries SET last_item=? WHERE query=?", (timestamp, query))
+        cursor.execute("UPDATE queries SET last_item=? WHERE id=?", (timestamp, query_id))
         conn.commit()
     except Exception:
         print_exc()
@@ -80,55 +91,28 @@ def update_last_timestamp(query, timestamp):
             conn.close()
 
 
-def add_item_to_db(id, query, price, timestamp):
+def add_item_to_db(id, title, query_id, price, timestamp):
     conn = None
     try:
-        conn = sqlite3.connect("vinted_notifications.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
-        # Insert into db the id and the query related to the item
-        cursor.execute("INSERT INTO items VALUES (?, ?, ?, ?)", (id, price, timestamp, query))
+        # Insert into db the id and the query_id related to the item
+        cursor.execute("INSERT INTO items VALUES (?, ?, ?, ?, ?)", (id, title, price, timestamp, query_id))
         # Update the last item for the query
-        cursor.execute("UPDATE queries SET last_item=? WHERE query=?", (timestamp, query))
+        cursor.execute("UPDATE queries SET last_item=? WHERE id=?", (timestamp, query_id))
         conn.commit()
     except Exception:
         print_exc()
     finally:
         if conn:
             conn.close()
-
-def clean_db():
-    conn = None
-    # We clean the db by doing two processes :
-    # First, we remove all the items that are too old (we keep the last 100 per query)
-    # Then, we remove all lines in the items table that do not match any query in the queries table
-    # This should lead to no deletion, but let's keep it safe
-
-    # Get all the queries
-    queries = get_queries()
-    # For each query we keep the last 100 items
-    for query in queries:
-        conn = sqlite3.connect("vinted_notifications.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT item FROM items WHERE query=? ORDER BY ROWID DESC LIMIT -1 OFFSET 100", (query[0],))
-        items = cursor.fetchall()
-        for item in items:
-            cursor.execute("DELETE FROM items WHERE item=?", (item[0],))
-            conn.commit()
-        conn.close()
-
-    # Remove all items that do not match any query
-    conn = sqlite3.connect("vinted_notifications.db")
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM items WHERE query NOT IN (SELECT query FROM queries)")
-    conn.commit()
-    conn.close()
 
 def get_queries():
     conn = None
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM queries")
+        cursor.execute("SELECT id, query, last_item FROM queries")
         return cursor.fetchall()
     except Exception:
         print_exc()
@@ -147,8 +131,10 @@ def is_query_in_db(searched_text):
         cursor.execute("SELECT COUNT() FROM queries WHERE query LIKE ?", ('%'+searched_text+'%',))
         if cursor.fetchone()[0]:
             return True
+        return False
     except Exception:
         print_exc()
+        return False
     finally:
         if conn:
             conn.close()
@@ -158,7 +144,7 @@ def add_query_to_db(query):
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO queries (query) VALUES (?)", (query,))
+        cursor.execute("INSERT INTO queries (query, last_item) VALUES (?, NULL)", (query,))
         conn.commit()
     except Exception:
         print_exc()
@@ -171,12 +157,17 @@ def remove_query_from_db(query_number):
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        query_string = f"SELECT query, rowid FROM (SELECT query, rowid, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={query_number}"
+        # Get the query and its ID based on the row number
+        query_string = f"SELECT id, query, rowid FROM (SELECT id, query, rowid, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={query_number}"
         cursor.execute(query_string)
-        query = cursor.fetchone()
-        cursor.execute("DELETE FROM queries WHERE ROWID=?", (query[1],))
-        cursor.execute("DELETE FROM items WHERE query=?", (query[0],))
-        conn.commit()
+        query_result = cursor.fetchone()
+        if query_result:
+            query_id, query_text, rowid = query_result
+            # Delete items associated with this query using query_id
+            cursor.execute("DELETE FROM items WHERE query_id=?", (query_id,))
+            # Delete the query
+            cursor.execute("DELETE FROM queries WHERE ROWID=?", (rowid,))
+            conn.commit()
     except Exception:
         print_exc()
     finally:
@@ -189,8 +180,10 @@ def remove_all_queries_from_db():
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM queries")
+        # Delete all items first to maintain foreign key integrity
         cursor.execute("DELETE FROM items")
+        # Then delete all queries
+        cursor.execute("DELETE FROM queries")
         conn.commit()
     except Exception:
         print_exc()
@@ -306,9 +299,22 @@ def get_items(limit=50, query=None):
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         if query:
-            cursor.execute("SELECT * FROM items WHERE query=? ORDER BY timestamp DESC LIMIT ?", (query, limit))
+            # Get the query_id for the given query
+            cursor.execute("SELECT id FROM queries WHERE query=?", (query,))
+            result = cursor.fetchone()
+            if result:
+                query_id = result[0]
+                # Get items with the matching query_id
+                cursor.execute(
+                    "SELECT i.item, i.title, i.price, i.timestamp, q.query FROM items i JOIN queries q ON i.query_id = q.id WHERE i.query_id=? ORDER BY i.timestamp DESC LIMIT ?",
+                    (query_id, limit))
+            else:
+                return []
         else:
-            cursor.execute("SELECT * FROM items ORDER BY timestamp DESC LIMIT ?", (limit,))
+            # Join with queries table to get the query text
+            cursor.execute(
+                "SELECT i.item, i.title, i.price, i.timestamp, q.query FROM items i JOIN queries q ON i.query_id = q.id ORDER BY i.timestamp DESC LIMIT ?",
+                (limit,))
         return cursor.fetchall()
     except Exception:
         print_exc()
