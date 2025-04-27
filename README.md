@@ -3,14 +3,15 @@
 A real-time notification system for Vinted listings that works across all Vinted country domains. Get instant alerts
 when items matching your search criteria are posted.
 
+![Vinted-Notifications](https://github.com/user-attachments/assets/f2788511-5a8a-4a8d-8198-a4135081a3d8)
+
 ## 📋 Features
 
+- **Web UI**: Manage everything through an intuitive web interface
 - **Multi-Country Support**: Works on all Vinted domains regardless of country
 - **Real-Time Notifications**: Get instant alerts for new listings
 - **Multiple Search Queries**: Monitor multiple search terms simultaneously
 - **Country Filtering**: Filter items by seller's country of origin
-- **Multi-Process Architecture**: Improved performance and stability
-- **Web UI**: Manage everything through an intuitive web interface
 - **RSS Feed**: Subscribe to your search results with any RSS reader
 - **Telegram Integration**: Receive notifications directly in Telegram
 
@@ -41,8 +42,9 @@ when items matching your search criteria are posted.
 
 3. **Initial Configuration**
 
-   The application can be configured through the Web UI after starting. However, you can also edit the
-   `configuration_values.py` file directly for some settings.
+   The application can be configured through the Web UI after starting. However, you can also change the Web UI port in
+   the
+   `configuration_values.py` file directly.
 
 4. **Run the application**
 
@@ -64,9 +66,9 @@ Features available in the Web UI:
 - **Dashboard**: Overview of application status and recent items
 - **Queries Management**: Add, remove, and view search queries
 - **Items Viewing**: Browse and filter items found by the application
--
-   - **Allowlist Management**: Filter items by seller's country
+- **Allowlist Management**: Filter items by seller's country
 - **Configuration**: Set up Telegram bot, RSS feed, and other settings
+- **Logs**: View application logs directly from the web interface
 
 ### Telegram Commands
 
@@ -100,14 +102,8 @@ at [http://localhost:8001](http://localhost:8001).
 
 ### Proxy Support
 
-The application supports using proxies to avoid rate limits:
-
-```python
-# In configuration_values.py
-PROXY_LIST = "path/to/proxy/list.txt"  # File with one proxy per line
-PROXY_LIST_LINK = "https://example.com/proxies"  # URL to download proxy list
-CHECK_PROXIES = True  # Enable proxy checking
-```
+The application supports using proxies to avoid rate limits. Those are configured in the configuration tab of the Web
+UI.
 
 ### Custom Notification Format
 
@@ -136,7 +132,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📜 License
 
-This project is licensed under the terms of the license included in the repository.
+This project is licensed under the [GNU AFFERO GENERAL PUBLIC LICENSE](LICENSE).
 
 ## 🙏 Acknowledgements
 
