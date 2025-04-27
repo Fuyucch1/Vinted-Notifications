@@ -5,12 +5,15 @@ from requests.exceptions import RequestException
 import configuration_values
 import concurrent.futures
 from typing import List, Optional
+from logger import get_logger
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 # Cache for proxy list
 _PROXY_CACHE = None
 _PROXY_CACHE_INITIALIZED = False
 _SINGLE_PROXY = None
-_LAST_PROXY_CHECK_TIME = 0  # Timestamp of the last proxy check
 
 # URL to test proxies against
 _TEST_URL = "https://www.vinted.fr/"
@@ -86,14 +89,21 @@ def get_random_proxy() -> Optional[str]:
     Returns:
         Optional[str]: A randomly selected proxy string or None if no working proxies are found.
     """
-    global _PROXY_CACHE, _PROXY_CACHE_INITIALIZED, _SINGLE_PROXY, _LAST_PROXY_CHECK_TIME
+    global _PROXY_CACHE, _PROXY_CACHE_INITIALIZED, _SINGLE_PROXY
+
+    # Import db here to avoid circular imports
+    import db
 
     current_time = time.time()
 
+    # Get the last proxy check time from the database
+    last_proxy_check_time_str = db.get_parameter("last_proxy_check_time")
+    last_proxy_check_time = float(last_proxy_check_time_str) if last_proxy_check_time_str else 0
+
     # Check if we need to recheck proxies (if more than PROXY_RECHECK_INTERVAL seconds have passed)
     if (_PROXY_CACHE_INITIALIZED and
-            _LAST_PROXY_CHECK_TIME > 0 and
-            current_time - _LAST_PROXY_CHECK_TIME > PROXY_RECHECK_INTERVAL):
+            last_proxy_check_time > 0 and
+            current_time - last_proxy_check_time > PROXY_RECHECK_INTERVAL):
         # Reset cache to force recheck
         _PROXY_CACHE_INITIALIZED = False
         _PROXY_CACHE = None
@@ -114,25 +124,30 @@ def get_random_proxy() -> Optional[str]:
 
     # Initialize cache on first call or after recheck interval
     _PROXY_CACHE_INITIALIZED = True
-    _LAST_PROXY_CHECK_TIME = current_time  # Update the last check time
+
+    # Update the last check time in the database
+    db.set_parameter("last_proxy_check_time", str(current_time))
 
     # Initialize all_proxies list
     all_proxies = []
 
-    # Check if PROXY_LIST is configured
-    if configuration_values.PROXY_LIST:
+    # Check if PROXY_LIST is configured in the database
+    proxy_list = db.get_parameter("proxy_list")
+    if proxy_list:
         # If PROXY_LIST is a string with multiple proxies separated by semicolons
-        all_proxies = [p.strip() for p in configuration_values.PROXY_LIST.split(';') if p.strip()]
+        all_proxies = [p.strip() for p in proxy_list.split(';') if p.strip()]
 
-    # Check if PROXY_LIST_LINK is configured
-    if configuration_values.PROXY_LIST_LINK:
+    # Check if PROXY_LIST_LINK is configured in the database
+    proxy_list_link = db.get_parameter("proxy_list_link")
+    if proxy_list_link:
         # Fetch proxies from the link and add them to all_proxies
-        link_proxies = fetch_proxies_from_link(configuration_values.PROXY_LIST_LINK)
+        link_proxies = fetch_proxies_from_link(proxy_list_link)
         all_proxies.extend(link_proxies)
 
     # Check proxies in parallel if we have any and CHECK_PROXIES is True
     if all_proxies:
-        if configuration_values.CHECK_PROXIES:
+        check_proxies = db.get_parameter("check_proxies") == "True"
+        if check_proxies:
             working_proxies = check_proxies_parallel(all_proxies)
             if working_proxies:
                 _PROXY_CACHE = working_proxies
@@ -238,6 +253,7 @@ def configure_proxy(session: requests.Session, proxy: Optional[str] = None) -> b
 
     # If we still don't have a proxy, return False
     if proxy is None:
+        session.proxies.clear()
         return False
 
     # Handle string proxy

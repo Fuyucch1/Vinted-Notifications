@@ -1,77 +1,139 @@
 # Vinted-Notifications
 
-A telegram bot for real-time Vinted listing notifications/alerts. **Natively works on all Vinteds, no matter the country.**
+A real-time notification system for Vinted listings that works across all Vinted country domains. Get instant alerts
+when items matching your search criteria are posted.
 
+![Vinted-Notifications](https://github.com/user-attachments/assets/f2788511-5a8a-4a8d-8198-a4135081a3d8)
 
-⚠️ This is an early stage WIP. Expect bugs and missing features. ⚠️
+## 📋 Features
 
-## Table of Content
+- **Web UI**: Manage everything through an intuitive web interface
+- **Multi-Country Support**: Works on all Vinted domains regardless of country
+- **Real-Time Notifications**: Get instant alerts for new listings
+- **Multiple Search Queries**: Monitor multiple search terms simultaneously
+- **Country Filtering**: Filter items by seller's country of origin
+- **RSS Feed**: Subscribe to your search results with any RSS reader
+- **Telegram Integration**: Receive notifications directly in Telegram
 
-- [Introduction](#Introduction)
-- [How to install](#How-to-install)
-- [How to use](#How-to-Use)
-- [How to update](#How-to-update)
-- [Acknowledgements](#Acknowledgements)
+## 📦 Installation
 
-## Introduction
+### Prerequisites
 
-This bot allows you to look for multiple items at the same time and to be notified when one of them is posted on Vinted.
+- Python 3.11 or higher
+- Telegram bot token (for Telegram notifications)
 
-## How to install
+### Setup
 
-Project was made with Python 3.11.
+1. **Clone the repository or download the latest release**
 
-1. Clone the repository or download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and extract it.
+   ```bash
+   git clone https://github.com/Fuyucch1/Vinted-Notifications.git
+   cd Vinted-Notifications
+   ```
 
-2. Install the dependencies with pip
+   Alternatively, download the [latest release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and
+   extract it.
 
+2. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Initial Configuration**
+
+   The application can be configured through the Web UI after starting. However, you can also change the Web UI port in
+   the
+   `configuration_values.py` file directly.
+
+4. **Run the application**
+
+   ```bash
+   python vinted_notifications.py
+   ```
+
+   Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
+
+## 🚀 Usage
+
+### Web UI
+
+The Web UI is the easiest way to manage the application. Access it at [http://localhost:8000](http://localhost:8000)
+after starting the application.
+
+Features available in the Web UI:
+
+- **Dashboard**: Overview of application status and recent items
+- **Queries Management**: Add, remove, and view search queries
+- **Items Viewing**: Browse and filter items found by the application
+- **Allowlist Management**: Filter items by seller's country
+- **Configuration**: Set up Telegram bot, RSS feed, and other settings
+- **Logs**: View application logs directly from the web interface
+
+### Telegram Commands
+
+After configuring your Telegram bot in the Web UI, you can use the following commands:
+
+- `/add_query query` - Add a search query to monitor
+- `/remove_query query_number` - Remove a specific query
+- `/remove_query all` - Remove all queries
+- `/queries` - List all active queries
+- `/hello` - Check if the bot is working
+- `/create_allowlist` - Create a country allowlist (will slow down processing)
+- `/delete_allowlist` - Delete the country allowlist
+- `/add_country XX` - Add a country to the allowlist (ISO3166 format)
+- `/remove_country XX` - Remove a country from the allowlist
+- `/allowlist` - View the current allowlist
+
+### Query Examples
+
+Queries must be added with a whole link. It works with filters.:
+
+   ```
+   /add_query https://www.vinted.fr/catalog?search_text=nike%20shoes&price_to=50&currency=EUR&brand_id[]=53
+   ```
+
+### RSS Feed
+
+The RSS feed provides an alternative way to receive notifications. After enabling it in the Web UI, access it
+at [http://localhost:8001](http://localhost:8001).
+
+## ⚙️ Advanced Configuration
+
+### Proxy Support
+
+The application supports using proxies to avoid rate limits. Those are configured in the configuration tab of the Web
+UI.
+
+### Custom Notification Format
+
+You can customize the notification message format:
+
+```python
+# In configuration_values.py
+MESSAGE = '''\
+🆕 Title: {title}
+💶 Price: {price}
+🛍️ Brand: {brand}
+<a href='{image}'>&#8205;</a>
+'''
 ```
-pip install -r requirements.txt
-```
 
-3. Fill the missing values in [`configuration_values.py`](configuration_values.py)
+## 🔄 Updating
 
-`TOKEN` can be obtained by creating a new bot with the BotFather on Telegram. [Learn how to create a bot here](https://core.telegram.org/bots/tutorial)\
-`CHAT_ID` can be obtained by sending a message to the bot and then calling the `getUpdates` method on the Telegram API at this address :
-```https://api.telegram.org/bot[TOKEN]/getUpdates```. Don't forget to replace `[TOKEN]` with your bot's token.
+1. Download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest)
+2. Back up your `vinted_notifications.db` file
+3. Replace all files with the new ones
+4. Restart the application
 
-4. Run the bot with
+## 🤝 Contributing
 
-```py
-python telegram_bot.py
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## How to use
+## 📜 License
 
-After starting the bot, you can use the following commands on Telegram :
+This project is licensed under the [GNU AFFERO GENERAL PUBLIC LICENSE](LICENSE).
 
-`/add_query query` - Adds a query to supervise.\
-`/remove_query query_number` - Removes a keyword from the list.\
-`/remove_query all` - Removes all keywords\
-`/queries` - Get all queries\
-`/hello` - Check if the bot is working\
-`/create_allowlist` - Creates an allowlist of country of origin\
-⚠️ Be aware that creating an allowlist will slow down the bot. ⚠️\
-`/delete_allowlist` - Deletes the allowlist\
-`/add_country XX` - Adds a country to the allowlist. Country must follow ISO3166 standard\
-`/remove_country XX` - Removes a country from the allowlist\
-`/allowlist` - Get the allowlist
+## 🙏 Acknowledgements
 
-## Quick example
-
-```
-/add_query https://www.vinted.fr/catalog?search_text=This%20is%20a%20test&time=1728936591&catalog[]=2309&price_to=150&currency=EUR&price_from=20&page=1
-```
-
-## How to update
-
-1. Download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and extract it.
-2. Replace the old files with the new ones.
-3. Don't forget to keep your tokens.
-4. You can keep your vinted.db, except if the new release specifies otherwise.
-
-This is an early stage WIP. There's no migration procedure planned between versions. I'll do it soon.
-
-## Acknowledgements
-
-Thanks to [@herissondev](https://github.com/herissondev) for maintaining pyVinted, a core dependancy of this project.
+- Thanks to [@herissondev](https://github.com/herissondev) for maintaining pyVinted, a core dependency of this project.

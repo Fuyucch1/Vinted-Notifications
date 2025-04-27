@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Queries - Vinted Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Queries</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-plus-circle me-2 text-info"></i>
+                <h5 class="card-title mb-0">Add New Query</h5>
+            </div>
+            <div class="card-body">
+                <form action="/add_query" method="post">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <div class="form-group">
+                                <label for="query">Vinted URL or Search Query</label>
+                                <input type="text" class="form-control" id="query" name="query"
+                                       placeholder="https://www.vinted.fr/catalog?search_text=nike+dunk" required>
+                                <small class="form-text text-muted">Enter a Vinted search URL or a search term</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-center">
+                            <button type="submit" class="btn btn-primary w-100">Add Query</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-search me-2 text-info"></i>
+                <h5 class="card-title mb-0">Current Queries</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Query</th>
+                            <th>Last Found Item</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for query in queries %}
+                        <tr>
+                            <td>{{ query.id }}</td>
+                            <td>{{ query.display }}</td>
+                            <td>{{ query.last_found_item }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="/items?query={{ query.query|urlencode }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-box"></i> View Items
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal{{ query.id }}">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                </div>
+
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteModal{{ query.id }}" tabindex="-1"
+                                     aria-labelledby="deleteModalLabel{{ query.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel{{ query.id }}">Confirm
+                                                    Deletion</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                        aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Are you sure you want to remove the query: <strong>{{ query.display
+                                                }}</strong>?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    Cancel
+                                                </button>
+                                                <form action="/remove_query/{{ query.id }}" method="post"
+                                                      class="d-inline">
+                                                    <button type="submit" class="btn btn-danger">Remove</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">No queries found</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if queries %}
+            <div class="card-footer">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                    <i class="bi bi-trash"></i> Remove All Queries
+                </button>
+
+                <!-- Delete All Modal -->
+                <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel"
+                     aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteAllModalLabel">Confirm Deletion</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to remove <strong>ALL</strong> queries? This action cannot be
+                                undone.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form action="/remove_query/all" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">Remove All</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

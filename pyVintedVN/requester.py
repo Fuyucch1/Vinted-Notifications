@@ -3,6 +3,15 @@ import random
 from requests.exceptions import HTTPError
 import configuration_values
 import proxies
+import sys
+import os
+
+# Add the parent directory to sys.path to import logger
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from logger import get_logger
+
+# Get logger for this module
+logger = get_logger(__name__)
 
 
 class Requester:
@@ -37,7 +46,7 @@ class Requester:
         self.debug = debug
 
         if self.debug:
-            print(f"[DEBUG] Using User-Agent: {self.HEADER['User-Agent']}")
+            logger.debug(f"Using User-Agent: {self.HEADER['User-Agent']}")
 
     def set_locale(self, locale):
         """
@@ -56,7 +65,7 @@ class Requester:
         }
         self.session.headers.update(self.HEADER)
         if self.debug:
-            print(f"[DEBUG] Locale set to {locale} with User-Agent: {self.HEADER['User-Agent']}")
+            logger.debug(f"Locale set to {locale} with User-Agent: {self.HEADER['User-Agent']}")
 
     def get(self, url, params=None):
         """
@@ -79,7 +88,7 @@ class Requester:
         # Set a random proxy for this request
         proxy_configured = proxies.configure_proxy(self.session)
         if self.debug and proxy_configured:
-            print(f"[DEBUG] Using proxy: {self.session.proxies}")
+            logger.debug(f"Using proxy: {self.session.proxies}")
 
         tried = 0
         while tried < self.MAX_RETRIES:
@@ -87,7 +96,7 @@ class Requester:
             with self.session.get(url, params=params) as response:
                 if response.status_code == 401 and tried < self.MAX_RETRIES:
                     if self.debug:
-                        print(f"Cookies invalid retrying {tried}/{self.MAX_RETRIES}")
+                        logger.debug(f"Cookies invalid retrying {tried}/{self.MAX_RETRIES}")
                     self.set_cookies()
                 elif response.status_code == 200:
                     return response
@@ -116,7 +125,7 @@ class Requester:
         # Set a random proxy for this request
         proxy_configured = proxies.configure_proxy(self.session)
         if self.debug and proxy_configured:
-            print(f"[DEBUG] Using proxy: {self.session.proxies}")
+            logger.debug(f"Using proxy: {self.session.proxies}")
 
         response = self.session.post(url, params)
         response.raise_for_status()
@@ -133,10 +142,10 @@ class Requester:
         try:
             self.session.head(self.VINTED_AUTH_URL)
             if self.debug:
-                print("Cookies set!")
+                logger.debug("Cookies set!")
         except Exception as e:
             if self.debug:
-                print(f"There was an error fetching cookies for vinted\nError: {e}")
+                logger.error(f"There was an error fetching cookies for vinted", exc_info=True)
 
 
     def update_cookies(self, cookies: dict):
@@ -148,7 +157,7 @@ class Requester:
         """
         self.session.cookies.update(cookies)
         if self.debug:
-            print(f"[DEBUG] Cookies manually updated ({len(cookies)} cookies received)")
+            logger.debug(f"Cookies manually updated ({len(cookies)} cookies received)")
 
     # Alias for backward compatibility
     setLocale = set_locale

@@ -1,2 +1,5 @@
 python-telegram-bot[job-queue]>=21.6
 requests
+apscheduler>=3.10.0
+feedgen
+flask

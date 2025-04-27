@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - Vinted Notifications{% endblock %}
+
+{% block head %}
+<style>
+    .log-entry {
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .log-info {
+        color: #0d6efd;
+    }
+
+    .log-warning {
+        color: #ffc107;
+    }
+
+    .log-error {
+        color: #dc3545;
+    }
+
+    .log-debug {
+        color: #6c757d;
+    }
+
+    .log-critical {
+        color: #721c24;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Logs</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Now
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAutoRefreshBtn" data-state="on">
+                <i class="bi bi-play-circle me-1"></i> Auto-Refresh: ON
+            </button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                <i class="bi bi-filter me-1"></i> Log Level
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item log-level-filter active" href="#" data-level="all">All Levels</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item log-level-filter" href="#" data-level="DEBUG">Debug</a></li>
+                <li><a class="dropdown-item log-level-filter" href="#" data-level="INFO">Info</a></li>
+                <li><a class="dropdown-item log-level-filter" href="#" data-level="WARNING">Warning</a></li>
+                <li><a class="dropdown-item log-level-filter" href="#" data-level="ERROR">Error</a></li>
+                <li><a class="dropdown-item log-level-filter" href="#" data-level="CRITICAL">Critical</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-journal-text me-2 text-info"></i>
+                    <h5 class="card-title mb-0">Log Entries</h5>
+                </div>
+                <span class="badge bg-secondary" id="logCount">0 entries</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th style="width: 180px;">Timestamp</th>
+                            <th style="width: 100px;">Level</th>
+                            <th style="width: 150px;">Module</th>
+                            <th>Message</th>
+                        </tr>
+                        </thead>
+                        <tbody id="logEntries">
+                        <tr>
+                            <td colspan="4" class="text-center py-4">Loading logs...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted">Log file: logs/vinted.log</span>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" id="loadMoreBtn">
+                        <i class="bi bi-arrow-down-circle me-1"></i> Load More
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const logEntries = document.getElementById('logEntries');
+        const logCount = document.getElementById('logCount');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const toggleAutoRefreshBtn = document.getElementById('toggleAutoRefreshBtn');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const logLevelFilters = document.querySelectorAll('.log-level-filter');
+
+        let autoRefreshInterval;
+        let currentLogLevel = 'all';
+        let currentOffset = 0;
+        const limit = 100;
+
+        // Function to fetch logs
+        function fetchLogs(offset = 0, append = false) {
+            fetch(`/api/logs?offset=${offset}&limit=${limit}&level=${currentLogLevel}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!append) {
+                        logEntries.innerHTML = '';
+                        currentOffset = 0;
+                    }
+
+                    if (data.logs.length === 0) {
+                        if (!append) {
+                            logEntries.innerHTML = '<tr><td colspan="4" class="text-center py-4">No log entries found</td></tr>';
+                        }
+                        loadMoreBtn.disabled = true;
+                    } else {
+                        loadMoreBtn.disabled = false;
+
+                        data.logs.forEach(log => {
+                            const row = document.createElement('tr');
+
+                            // Add CSS class based on log level
+                            if (log.level === 'ERROR' || log.level === 'CRITICAL') {
+                                row.classList.add('table-danger');
+                            } else if (log.level === 'WARNING') {
+                                row.classList.add('table-warning');
+                            }
+
+                            row.innerHTML = `
+                                <td>${log.timestamp}</td>
+                                <td><span class="badge log-${log.level.toLowerCase()}">${log.level}</span></td>
+                                <td>${log.module}</td>
+                                <td class="log-entry">${log.message}</td>
+                            `;
+                            logEntries.appendChild(row);
+                        });
+
+                        if (!append) {
+                            logCount.textContent = `${data.total} entries`;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching logs:', error);
+                    logEntries.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Error loading logs</td></tr>';
+                });
+        }
+
+        // Initial load
+        fetchLogs();
+
+        // Set up auto-refresh (every 5 seconds)
+        autoRefreshInterval = setInterval(() => {
+            fetchLogs();
+        }, 5000);
+
+        // Manual refresh button
+        refreshBtn.addEventListener('click', () => {
+            fetchLogs();
+        });
+
+        // Toggle auto-refresh
+        toggleAutoRefreshBtn.addEventListener('click', () => {
+            const currentState = toggleAutoRefreshBtn.getAttribute('data-state');
+
+            if (currentState === 'on') {
+                clearInterval(autoRefreshInterval);
+                toggleAutoRefreshBtn.setAttribute('data-state', 'off');
+                toggleAutoRefreshBtn.innerHTML = '<i class="bi bi-pause-circle me-1"></i> Auto-Refresh: OFF';
+            } else {
+                autoRefreshInterval = setInterval(() => {
+                    fetchLogs();
+                }, 5000);
+                toggleAutoRefreshBtn.setAttribute('data-state', 'on');
+                toggleAutoRefreshBtn.innerHTML = '<i class="bi bi-play-circle me-1"></i> Auto-Refresh: ON';
+            }
+        });
+
+        // Load more logs
+        loadMoreBtn.addEventListener('click', () => {
+            currentOffset += limit;
+            fetchLogs(currentOffset, true);
+        });
+
+        // Log level filtering
+        logLevelFilters.forEach(filter => {
+            filter.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Update active state
+                logLevelFilters.forEach(f => f.classList.remove('active'));
+                filter.classList.add('active');
+
+                // Update current log level and fetch logs
+                currentLogLevel = filter.getAttribute('data-level');
+                fetchLogs();
+            });
+        });
+    });
+</script>
+{% endblock %}
