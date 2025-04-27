@@ -222,38 +222,31 @@ def clear_item_queue(items_queue, new_items_queue):
     if not items_queue.empty():
         data, query_id = items_queue.get()
         for item in data:
-            # Get the id of the item
-            id = item.id
-            # Get the timestamp of the item
-            timestamp = item.raw_timestamp
-            # Get the price of the item
-            price = item.price
-            # Get the title of the item
-            title = item.title
 
             # If already in db, pass
             last_query_timestamp = db.get_last_timestamp(query_id)
-            if last_query_timestamp is not None and last_query_timestamp >= timestamp:
+            if last_query_timestamp is not None and last_query_timestamp >= item.raw_timestamp:
                 pass
 
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we just update the timestamp
             elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
                     db.get_allowlist() + ["XX"]):
-                db.update_last_timestamp(query_id, timestamp)
+                db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
             else:
                 # We create the message
                 content = configuration_values.MESSAGE.format(
                     title=item.title,
-                    price=str(item.price) + " €",
+                    price=str(item.price) + " " + item.currency,
                     brand=item.brand_title,
                     image=None if item.photo is None else item.photo
                 )
                 # add the item to the queue
                 new_items_queue.put((content, item.url, "Open Vinted"))
                 # Add the item to the db
-                db.add_item_to_db(id, title, query_id, price, timestamp)
+                db.add_item_to_db(id=item.id, timestamp=item.raw_timestamp, price=item.price, title=item.title,
+                                  photo_url=item.photo, query_id=query_id, currency=item.currency)
 
 
 def check_version():

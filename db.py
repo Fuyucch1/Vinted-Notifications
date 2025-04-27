@@ -15,7 +15,7 @@ def create_sqlite_db():
         # Using proper foreign key relationship between items and queries
         cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC)")
         cursor.execute(
-            "CREATE TABLE items (item NUMERIC, title TEXT, price NUMERIC, timestamp NUMERIC, query_id INTEGER, FOREIGN KEY(query_id) REFERENCES queries(id))")
+            "CREATE TABLE items (item NUMERIC, title TEXT, price NUMERIC, currency TEXT, timestamp NUMERIC, photo_url TEXT, query_id INTEGER, FOREIGN KEY(query_id) REFERENCES queries(id))")
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
         # Add a parameters table
         cursor.execute("CREATE TABLE parameters (key TEXT, value TEXT)")
@@ -91,13 +91,15 @@ def update_last_timestamp(query_id, timestamp):
             conn.close()
 
 
-def add_item_to_db(id, title, query_id, price, timestamp):
+def add_item_to_db(id, title, query_id, price, timestamp, photo_url, currency="EUR"):
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         # Insert into db the id and the query_id related to the item
-        cursor.execute("INSERT INTO items VALUES (?, ?, ?, ?, ?)", (id, title, price, timestamp, query_id))
+        cursor.execute(
+            "INSERT INTO items (item, title, price, currency, timestamp, photo_url, query_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (id, title, price, currency, timestamp, photo_url, query_id))
         # Update the last item for the query
         cursor.execute("UPDATE queries SET last_item=? WHERE id=?", (timestamp, query_id))
         conn.commit()
@@ -306,14 +308,14 @@ def get_items(limit=50, query=None):
                 query_id = result[0]
                 # Get items with the matching query_id
                 cursor.execute(
-                    "SELECT i.item, i.title, i.price, i.timestamp, q.query FROM items i JOIN queries q ON i.query_id = q.id WHERE i.query_id=? ORDER BY i.timestamp DESC LIMIT ?",
+                    "SELECT i.item, i.title, i.price, i.currency, i.timestamp, q.query, i.photo_url FROM items i JOIN queries q ON i.query_id = q.id WHERE i.query_id=? ORDER BY i.timestamp DESC LIMIT ?",
                     (query_id, limit))
             else:
                 return []
         else:
             # Join with queries table to get the query text
             cursor.execute(
-                "SELECT i.item, i.title, i.price, i.timestamp, q.query FROM items i JOIN queries q ON i.query_id = q.id ORDER BY i.timestamp DESC LIMIT ?",
+                "SELECT i.item, i.title, i.price, i.currency, i.timestamp, q.query, i.photo_url FROM items i JOIN queries q ON i.query_id = q.id ORDER BY i.timestamp DESC LIMIT ?",
                 (limit,))
         return cursor.fetchall()
     except Exception:
