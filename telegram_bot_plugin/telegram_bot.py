@@ -198,7 +198,8 @@ class LeRobot:
     async def send_new_post(self, content, url, text):
         try:
             async with self.bot:
-                await self.bot.send_message(db.get_parameter("telegram_chat_id"), content, parse_mode="HTML",
+                chat_ID = str(db.get_parameter("telegram_chat_id"))
+                await self.bot.send_message(chat_ID, content, parse_mode="HTML",
                                             read_timeout=40,
                                             write_timeout=40,
                                             reply_markup=InlineKeyboardMarkup(

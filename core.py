@@ -33,6 +33,8 @@ def process_query(query):
     # Remove time and search_id if provided
     query_params.pop('time', None)
     query_params.pop('search_id', None)
+    query_params.pop('disabled_personalization', None)
+    query_params.pop('page', None)
 
     searched_text = query_params.get('search_text')
 
@@ -42,9 +44,7 @@ def process_query(query):
         (parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
 
     # Some queries are made with filters only, so we need to check if the search_text is present
-    if searched_text is None and db.is_query_in_db(processed_query) is True:
-        return "Query already exists.", False
-    elif searched_text is not None and db.is_query_in_db(searched_text[0]) is True:
+    if db.is_query_in_db(processed_query) is True:
         return "Query already exists.", False
     else:
         # add the query to the db
