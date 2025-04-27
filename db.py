@@ -37,6 +37,10 @@ def create_sqlite_db():
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)",
                        ("github_url", "https://github.com/Fuyucch1/Vinted-Notifications"))
 
+        # System parameters
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("items_per_query", "20"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("query_refresh_delay", "60"))
+
         conn.commit()
     except Exception:
         print_exc()

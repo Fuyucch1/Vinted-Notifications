@@ -10,12 +10,20 @@ logger = get_logger(__name__)
 # Global process references
 telegram_process = None
 rss_process = None
+scrape_process = None
+current_query_refresh_delay = None
 
 
 def scraper_process(items_queue):
     logger.info("Scrape process started")
+
+    # Get the query refresh delay from the database
+    current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
+    logger.info(f"Using query refresh delay of {current_query_refresh_delay} seconds")
+
     scraper_scheduler = BackgroundScheduler()
-    scraper_scheduler.add_job(core.process_items, 'interval', seconds=60, args=[items_queue], name="scraper")
+    scraper_scheduler.add_job(core.process_items, 'interval', seconds=current_query_refresh_delay, args=[items_queue],
+                              name="scraper")
     scraper_scheduler.start()
     try:
         # Keep the process running
@@ -67,8 +75,42 @@ def telegram_bot_process(queue):
         logger.error(f"Error in telegram bot process: {e}", exc_info=True)
 
 
-def monitor_processes(telegram_queue, rss_queue):
+def check_refresh_delay(items_queue):
+    """Check if the query refresh delay has changed and update the scheduler if needed"""
+    global scrape_process, current_query_refresh_delay
+
+    # Check if the scheduler is running
+
+    if scrape_process is None or not scrape_process.is_alive():
+        return
+
+    # Get the current value from the database
+    try:
+        new_delay = int(db.get_parameter("query_refresh_delay"))
+
+        # If the delay has changed, update the scheduler
+        if new_delay != current_query_refresh_delay:
+            logger.info(f"Query refresh delay changed from {current_query_refresh_delay} to {new_delay} seconds")
+
+            # Update the global variable
+            current_query_refresh_delay = new_delay
+
+            # Remove the existing job and add a new one with the updated interval
+            scrape_process.terminate()
+            scrape_process.join()
+            scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
+            scrape_process.start()
+
+            logger.info(f"Scheduler updated with new refresh delay of {new_delay} seconds")
+    except Exception as e:
+        logger.error(f"Error updating refresh delay: {e}", exc_info=True)
+
+
+def monitor_processes(items_queue, telegram_queue, rss_queue):
     global telegram_process, rss_process
+
+    # Check if the query refresh delay has changed
+    check_refresh_delay(items_queue)
 
     ### TELEGRAM ###
     # Check telegram process status
@@ -140,6 +182,7 @@ if __name__ == "__main__":
 
     # 1. Create and start the scrape process
     # This process will scrape items and put them in the items_queue
+    current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
     scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
     scrape_process.start()
 
@@ -157,7 +200,7 @@ if __name__ == "__main__":
     # 4. Set up a scheduler to monitor processes
     # This will check the process status in the database and start/stop processes as needed
     monitor_scheduler = BackgroundScheduler()
-    monitor_scheduler.add_job(monitor_processes, 'interval', seconds=5, args=[telegram_queue, rss_queue],
+    monitor_scheduler.add_job(monitor_processes, 'interval', seconds=5, args=[items_queue, telegram_queue, rss_queue],
                               name="process_monitor")
     monitor_scheduler.start()
 

@@ -205,9 +205,12 @@ def process_items(queue):
     # Initialize Vinted
     vinted = Vinted()
 
+    # Get the number of items per query from the database
+    items_per_query = int(db.get_parameter("items_per_query"))
+
     # for each keyword we parse data
     for query in all_queries:
-        all_items = vinted.items.search(query[1])
+        all_items = vinted.items.search(query[1], nbr_items=items_per_query)
         # Filter to only include new items. This should reduce the amount of db calls.
         data = [item for item in all_items if item.is_new_item()]
         queue.put((data, query[0]))
