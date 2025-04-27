@@ -127,6 +127,53 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="bi bi-shield-lock me-2 text-info"></i>
+                                    <h5 class="card-title mb-0">Proxy Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    {% if params.check_proxies == 'True' %}
+                                                    <input class="form-check-input" type="checkbox" id="check_proxies"
+                                                           name="check_proxies" checked>
+                                                    {% else %}
+                                                    <input class="form-check-input" type="checkbox" id="check_proxies"
+                                                           name="check_proxies">
+                                                    {% endif %}
+                                                    <label class="form-check-label" for="check_proxies">
+                                                        Check Proxies
+                                                    </label>
+                                                    <small class="form-text text-muted d-block">Verify if proxies are
+                                                        working before using them</small>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="proxy_list" class="form-label">Proxy List</label>
+                                                <textarea class="form-control" id="proxy_list" name="proxy_list"
+                                                          rows="3">{{ params.proxy_list }}</textarea>
+                                                <small class="form-text text-muted">List of proxies separated by
+                                                    semicolons (;)<br>
+                                                    Format: http://ip:port or ip:port</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="proxy_list_link" class="form-label">Proxy List Link</label>
+                                                <input type="text" class="form-control" id="proxy_list_link"
+                                                       name="proxy_list_link" value="{{ params.proxy_list_link }}">
+                                                <small class="form-text text-muted">URL to fetch proxies from (one proxy
+                                                    per line)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-12">
                             <button type="submit" class="btn btn-primary">Save Configuration</button>

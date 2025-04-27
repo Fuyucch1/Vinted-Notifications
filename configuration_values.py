@@ -6,14 +6,6 @@ MESSAGE = '''\
 <a href='{image}'>&#8205;</a>
 '''
 
-#### PROXY SETTINGS ####
-# Proxy list
-PROXY_LIST = ""
-# Proxy list link. Only one.
-PROXY_LIST_LINK = ""
-# Should we check proxies? Defaults to False bcs ffs I hate working with proxies
-CHECK_PROXIES = False
-
 #### WEB UI SETTINGS ####
 # Web UI port
 WEB_UI_PORT = 8000

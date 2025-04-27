@@ -41,6 +41,12 @@ def create_sqlite_db():
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("items_per_query", "20"))
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("query_refresh_delay", "60"))
 
+        # Proxy parameters
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("proxy_list", ""))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("proxy_list_link", ""))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("check_proxies", "False"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("last_proxy_check_time", "0"))
+
         conn.commit()
     except Exception:
         print_exc()
