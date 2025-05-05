@@ -195,7 +195,7 @@ class LeRobot:
 
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 
-    async def send_new_post(self, content, url, text):
+    async def send_new_post(self, content, url, text, buy_url, buy_text):
         try:
             async with self.bot:
                 chat_ID = str(db.get_parameter("telegram_chat_id"))
@@ -203,13 +203,15 @@ class LeRobot:
                                             read_timeout=40,
                                             write_timeout=40,
                                             reply_markup=InlineKeyboardMarkup(
-                                                [[InlineKeyboardButton(text=text, url=url)]]))
+                                                [[InlineKeyboardButton(text=text, url=url)],
+                                                 [InlineKeyboardButton(text=buy_text, url=buy_url)]])
+                                            )
         except RetryAfter as e:
             retry_after = e.retry_after
             logger.error(f"Flood control exceeded. Retrying in {retry_after + 2} seconds")
             await asyncio.sleep(retry_after + 2)
             # Retry sending the message
-            await self.send_new_post(content, url, text)
+            await self.send_new_post(content, url, text, buy_url, buy_text)
         except Exception as e:
             logger.error(f"Error sending new post: {str(e)}", exc_info=True)
 
@@ -228,8 +230,8 @@ class LeRobot:
         try:
             while 1:
                 if not self.new_items_queue.empty():
-                    content, url, text = self.new_items_queue.get()
-                    await self.send_new_post(content, url, text)
+                    content, url, text, buy_url, buy_text = self.new_items_queue.get()
+                    await self.send_new_post(content, url, text, buy_url, buy_text)
                 else:
                     await asyncio.sleep(0.1)
                     pass
