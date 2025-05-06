@@ -195,17 +195,17 @@ class LeRobot:
 
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 
-    async def send_new_post(self, content, url, text, buy_url, buy_text):
+    async def send_new_post(self, content, url, text, buy_url=None, buy_text=None):
         try:
             async with self.bot:
                 chat_ID = str(db.get_parameter("telegram_chat_id"))
+                buttons = [[InlineKeyboardButton(text=text, url=url)]]
+                if buy_url and buy_text:
+                    buttons.append([InlineKeyboardButton(text=buy_text, url=buy_url)])
                 await self.bot.send_message(chat_ID, content, parse_mode="HTML",
                                             read_timeout=40,
                                             write_timeout=40,
-                                            reply_markup=InlineKeyboardMarkup(
-                                                [[InlineKeyboardButton(text=text, url=url)],
-                                                 [InlineKeyboardButton(text=buy_text, url=buy_url)]])
-                                            )
+                                            reply_markup=InlineKeyboardMarkup(buttons))
         except RetryAfter as e:
             retry_after = e.retry_after
             logger.error(f"Flood control exceeded. Retrying in {retry_after + 2} seconds")
