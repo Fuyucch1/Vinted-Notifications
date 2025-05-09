@@ -95,6 +95,7 @@ class Requester:
             tried += 1
             with self.session.get(url, params=params) as response:
                 if response.status_code in (401, 404) and tried < self.MAX_RETRIES:
+                    print(f"Cookies invalid, retrying {tried}/{self.MAX_RETRIES}")
                     if self.debug:
                         logger.debug(f"Cookies invalid retrying {tried}/{self.MAX_RETRIES}")
                     self.set_cookies()
