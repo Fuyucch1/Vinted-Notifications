@@ -246,7 +246,7 @@ def clear_item_queue(items_queue, new_items_queue):
                     image=None if item.photo is None else item.photo
                 )
                 # add the item to the queue
-                new_items_queue.put((content, item.url, "Open Vinted"))
+                new_items_queue.put((content, item.url, "Open Vinted", None, None))
                 # new_items_queue.put((content, item.url, "Open Vinted", item.buy_url, "Open buy page"))
                 # Add the item to the db
                 db.add_item_to_db(id=item.id, timestamp=item.raw_timestamp, price=item.price, title=item.title,
