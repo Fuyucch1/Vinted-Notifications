@@ -91,6 +91,7 @@ class Requester:
             logger.debug(f"Using proxy: {self.session.proxies}")
 
         tried = 0
+        new_session = False
         while tried < self.MAX_RETRIES:
             tried += 1
             with self.session.get(url, params=params) as response:
@@ -104,6 +105,18 @@ class Requester:
                 elif tried == self.MAX_RETRIES:
                     # If we've reached max retries, return the last response
                     # even if it's not a 200 status code
+
+                    # New try : if we still get a 401, we reset the session
+                    if response.status_code == 401 and not new_session:
+                        new_session = True
+                        self.session = requests.Session()
+                        self.session.headers.update(self.HEADER)
+                        # proxy
+                        proxy_configured = proxies.configure_proxy(self.session)
+                        if self.debug:
+                            logger.debug("Session reset due to 401 error")
+                        tried = 0
+                        continue
                     return response
 
         # This should only happen if the loop exits without returning
