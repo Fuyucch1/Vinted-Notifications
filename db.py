@@ -61,7 +61,9 @@ def is_item_in_db_by_id(id):
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT() FROM items WHERE item=?", (id,))
-        return cursor.fetchone()[0]
+        if cursor.fetchone()[0]:
+            return True
+        return False
     except Exception:
         print_exc()
     finally:
