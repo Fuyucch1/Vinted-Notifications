@@ -7,13 +7,45 @@ def get_db_connection():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
+def migrate_db_if_needed():
+    """Check if database needs migration and add missing columns if needed"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if name column exists in queries table
+        cursor.execute("PRAGMA table_info(queries)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'name' not in columns:
+            # Add name column to queries table
+            cursor.execute("ALTER TABLE queries ADD COLUMN name TEXT")
+            conn.commit()
+            print("Database migrated: Added 'name' column to queries table")
+        
+        # Check if dark_mode parameter exists
+        cursor.execute("SELECT value FROM parameters WHERE key = 'dark_mode'")
+        result = cursor.fetchone()
+        if not result:
+            # Add dark_mode parameter
+            cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("dark_mode", "false"))
+            conn.commit()
+            print("Database migrated: Added 'dark_mode' parameter")
+            
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
 def create_sqlite_db():
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         # Using proper foreign key relationship between items and queries
-        cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC)")
+        cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC, name TEXT)")
         cursor.execute(
             "CREATE TABLE items (item NUMERIC, title TEXT, price NUMERIC, currency TEXT, timestamp NUMERIC, photo_url TEXT, query_id INTEGER, FOREIGN KEY(query_id) REFERENCES queries(id))")
         cursor.execute("CREATE TABLE allowlist (country TEXT)")
@@ -40,6 +72,7 @@ def create_sqlite_db():
         # System parameters
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("items_per_query", "20"))
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("query_refresh_delay", "60"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("dark_mode", "false"))
 
         # Proxy parameters
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("proxy_list", ""))
@@ -124,7 +157,7 @@ def get_queries():
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, query, last_item FROM queries")
+        cursor.execute("SELECT id, query, last_item, name FROM queries")
         return cursor.fetchall()
     except Exception:
         print_exc()
@@ -150,13 +183,28 @@ def is_query_in_db(processed_query):
     finally:
         if conn:
             conn.close()
-
-def add_query_to_db(query):
+            
+def update_query_name(query_id, name):
     conn = None
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO queries (query, last_item) VALUES (?, NULL)", (query,))
+        cursor.execute("UPDATE queries SET name=? WHERE id=?", (name, query_id))
+        conn.commit()
+        return True
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def add_query_to_db(query, name=None):
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO queries (query, last_item, name) VALUES (?, NULL, ?)", (query, name))
         conn.commit()
     except Exception:
         print_exc()
@@ -360,7 +408,89 @@ def get_total_queries_count():
         return cursor.fetchone()[0]
     except Exception:
         print_exc()
-        return 0
+
+
+def export_queries_to_json():
+    """
+    Export all queries to a JSON format
+    Returns a list of dictionaries with query information
+    """
+    import json
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, query, name FROM queries")
+        queries = cursor.fetchall()
+        
+        result = []
+        for query in queries:
+            result.append({
+                "id": query[0],
+                "query": query[1],
+                "name": query[2]
+            })
+        return json.dumps(result)
+    except Exception as e:
+        print_exc()
+        return json.dumps({"error": str(e)})
+    finally:
+        if conn:
+            conn.close()
+
+
+def import_queries_from_json(json_data):
+    """
+    Import queries from JSON format
+    Returns tuple (success, message)
+    """
+    import json
+    conn = None
+    try:
+        # Parse JSON data
+        queries = json.loads(json_data)
+        
+        # Validate data structure
+        if not isinstance(queries, list):
+            return False, "Invalid JSON format: expected a list of queries"
+        
+        # Connect to database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Track statistics
+        added = 0
+        skipped = 0
+        
+        # Process each query
+        for query_data in queries:
+            # Validate query data
+            if not isinstance(query_data, dict):
+                continue
+                
+            query = query_data.get("query")
+            name = query_data.get("name")
+            
+            if not query:
+                continue
+                
+            # Check if query already exists
+            if is_query_in_db(query):
+                skipped += 1
+                continue
+                
+            # Add query to database
+            cursor.execute("INSERT INTO queries (query, last_item, name) VALUES (?, NULL, ?)", 
+                          (query, name))
+            added += 1
+            
+        conn.commit()
+        return True, f"Import complete: {added} queries added, {skipped} skipped"
+    except json.JSONDecodeError:
+        return False, "Invalid JSON format"
+    except Exception as e:
+        print_exc()
+        return False, f"Error importing queries: {str(e)}"
     finally:
         if conn:
             conn.close()

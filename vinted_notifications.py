@@ -17,7 +17,9 @@ def scraper_process(items_queue):
     logger.info("Scrape process started")
 
     # Get the query refresh delay from the database
-    current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
+    query_refresh_delay = db.get_parameter("query_refresh_delay")
+    # Set a default value if the parameter doesn't exist yet
+    current_query_refresh_delay = int(query_refresh_delay) if query_refresh_delay is not None else 60
     logger.info(f"Using query refresh delay of {current_query_refresh_delay} seconds")
 
     scraper_scheduler = BackgroundScheduler()
@@ -85,7 +87,9 @@ def check_refresh_delay(items_queue):
 
     # Get the current value from the database
     try:
-        new_delay = int(db.get_parameter("query_refresh_delay"))
+        query_refresh_delay = db.get_parameter("query_refresh_delay")
+        # Set a default value if the parameter doesn't exist yet
+        new_delay = int(query_refresh_delay) if query_refresh_delay is not None else 60
 
         # If the delay has changed, update the scheduler
         if new_delay != current_query_refresh_delay:
@@ -165,10 +169,25 @@ def plugin_checker():
 
 if __name__ == "__main__":
     # Starting sequence
-    # Db check
+    # Db check and initialization
     if not os.path.exists("./vinted_notifications.db"):
         db.create_sqlite_db()
         logger.info("Database created successfully")
+    else:
+        # Check if tables exist and create them if they don't
+        try:
+            # Try to access a table to check if it exists
+            test_value = db.get_parameter('version')
+            if test_value is None:
+                # Tables might not exist, create them
+                db.create_sqlite_db()
+                logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Error checking database: {e}")
+            # Tables don't exist, create them
+            db.create_sqlite_db()
+            logger.info("Database tables created successfully")
+    
     # Set version
     db.set_parameter('version', "1.0.1")
 
@@ -183,7 +202,9 @@ if __name__ == "__main__":
 
     # 1. Create and start the scrape process
     # This process will scrape items and put them in the items_queue
-    current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
+    query_refresh_delay = db.get_parameter("query_refresh_delay")
+    # Set a default value if the parameter doesn't exist yet
+    current_query_refresh_delay = int(query_refresh_delay) if query_refresh_delay is not None else 60
     scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
     scrape_process.start()
 

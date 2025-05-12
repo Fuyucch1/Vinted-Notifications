@@ -5,6 +5,9 @@ from datetime import datetime
 from logger import get_logger
 import configuration_values
 
+# Migrate database if needed
+db.migrate_db_if_needed()
+
 # Get logger for this module
 logger = get_logger(__name__)
 
@@ -33,6 +36,13 @@ def inject_current_year():
     return {'current_year': datetime.now().year}
 
 
+@app.context_processor
+def inject_theme_preference():
+    params = db.get_all_parameters()
+    theme = 'dark' if params.get('dark_mode', 'false') == 'true' else 'light'
+    return {'theme': theme}
+
+
 @app.route('/')
 def index():
     # Get parameters
@@ -54,9 +64,9 @@ def index():
             last_found_item = "Never"
 
         formatted_queries.append({
-            'id': i + 1,
-            'query': query[0],
-            'display': search_text if search_text else query[0],
+            'id': query[0],  # Use actual query ID
+            'query': query[1],
+            'display': query[3] if query[3] else (search_text if search_text else query[1]),
             'last_found_item': last_found_item
         })
 
@@ -127,9 +137,10 @@ def queries():
             last_found_item = "Never"
 
         formatted_queries.append({
-            'id': i + 1,
-            'query': query[0],
-            'display': search_text if search_text else query[1],
+            'id': query[0],  # Use actual query ID instead of index
+            'query': query[1],
+            'name': query[3],  # Add the name field
+            'display': query[3] if query[3] else (search_text if search_text else query[1]),
             'last_found_item': last_found_item
         })
 
@@ -139,8 +150,9 @@ def queries():
 @app.route('/add_query', methods=['POST'])
 def add_query():
     query = request.form.get('query')
+    name = request.form.get('name')
     if query:
-        message, is_new_query = core.process_query(query)
+        message, is_new_query = core.process_query(query, name)
         if is_new_query:
             flash(f'Query added: {query}', 'success')
         else:
@@ -171,6 +183,53 @@ def remove_all_queries():
         flash(message, 'error')
 
     return redirect(url_for('queries'))
+
+
+@app.route('/update_query_name/<int:query_id>', methods=['POST'])
+def update_query_name(query_id):
+    name = request.form.get('name')
+    if db.update_query_name(query_id, name):
+        flash('Query name updated successfully', 'success')
+    else:
+        flash('Failed to update query name', 'error')
+    return redirect(url_for('queries'))
+
+
+@app.route('/export_queries', methods=['GET'])
+def export_queries():
+    """Export all queries as JSON file for download"""
+    try:
+        json_data = db.export_queries_to_json()
+        return jsonify({"success": True, "data": json_data})
+    except Exception as e:
+        logger.error(f"Error exporting queries: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/import_queries', methods=['POST'])
+def import_queries():
+    """Import queries from uploaded JSON file"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"success": False, "error": "No file provided"})
+            
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"success": False, "error": "No file selected"})
+            
+        if not file.filename.endswith('.json'):
+            return jsonify({"success": False, "error": "File must be JSON format"})
+            
+        # Read file content
+        json_data = file.read().decode('utf-8')
+        
+        # Import queries
+        success, message = db.import_queries_from_json(json_data)
+        
+        return jsonify({"success": success, "message": message})
+    except Exception as e:
+        logger.error(f"Error importing queries: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route('/items')
@@ -232,7 +291,7 @@ def items():
 @app.route('/config')
 def config():
     params = db.get_all_parameters()
-    return render_template('config.html', params=params)
+    return render_template('config.html', params=params, dark_mode=params.get('dark_mode', 'false'))
 
 
 @app.route('/update_config', methods=['POST'])
@@ -252,6 +311,10 @@ def update_config():
     # Update System parameters
     db.set_parameter('items_per_query', request.form.get('items_per_query', '20'))
     db.set_parameter('query_refresh_delay', request.form.get('query_refresh_delay', '60'))
+    
+    # Update UI parameters
+    dark_mode = 'dark_mode' in request.form
+    db.set_parameter('dark_mode', str(dark_mode).lower())
 
     # Update Proxy parameters
     check_proxies = 'check_proxies' in request.form

@@ -26,6 +26,13 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
+                                            <div class="mb-3 form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="dark_mode" name="dark_mode" value="true" {% if dark_mode == 'true' %}checked{% endif %}>
+                                                <label class="form-check-label" for="dark_mode">Dark Mode</label>
+                                                <small class="form-text text-muted d-block">Enable dark theme for the web interface</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="items_per_query" class="form-label">Items Per Query</label>
                                                 <input type="number" class="form-control" id="items_per_query"
