@@ -1,4 +1,4 @@
-import multiprocessing, time, core, os, db, configuration_values
+import multiprocessing, time, core, os, db, configuration_values, sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
 from rss_feed_plugin.rss_feed import rss_feed_process
@@ -16,6 +16,9 @@ current_query_refresh_delay = None
 def scraper_process(items_queue):
     logger.info("Scrape process started")
 
+    # Declare the global variable first
+    global current_query_refresh_delay
+    
     # Get the query refresh delay from the database
     query_refresh_delay = db.get_parameter("query_refresh_delay")
     # Set a default value if the parameter doesn't exist yet
@@ -171,24 +174,48 @@ if __name__ == "__main__":
     # Starting sequence
     # Db check and initialization
     if not os.path.exists("./vinted_notifications.db"):
+        # Database file doesn't exist, create it with all tables
         db.create_sqlite_db()
         logger.info("Database created successfully")
     else:
-        # Check if tables exist and create them if they don't
+        # Database file exists, but we need to check if all tables are properly initialized
         try:
             # Try to access a table to check if it exists
             test_value = db.get_parameter('version')
             if test_value is None:
-                # Tables might not exist, create them
-                db.create_sqlite_db()
-                logger.info("Database tables created successfully")
+                # Version parameter doesn't exist, attempt to migrate first
+                logger.info("Database exists but version parameter not found, attempting migration")
+                try:
+                    # Try to migrate existing tables if possible
+                    db.migrate_db_if_needed()
+                    # Set version if it doesn't exist
+                    db.set_parameter('version', "1.0.1")
+                    logger.info("Database migrated successfully")
+                except Exception as e:
+                    logger.error(f"Error migrating database: {e}")
+                    # If migration fails, don't try to recreate tables as that would cause errors
+                    # Just ensure the version is set
+                    try:
+                        db.set_parameter('version', "1.0.1")
+                    except Exception:
+                        logger.error("Could not set version parameter, database may be corrupted")
         except Exception as e:
             logger.error(f"Error checking database: {e}")
-            # Tables don't exist, create them
-            db.create_sqlite_db()
-            logger.info("Database tables created successfully")
+            # Tables likely don't exist at all, create them
+            try:
+                db.create_sqlite_db()
+                logger.info("Database tables created successfully")
+            except sqlite3.OperationalError as sql_e:
+                # This likely means tables already exist partially
+                logger.error(f"Could not create all tables, some may already exist: {sql_e}")
+                # Try to migrate instead
+                try:
+                    db.migrate_db_if_needed()
+                    logger.info("Attempted database migration after partial table creation")
+                except Exception as mig_e:
+                    logger.error(f"Error during migration attempt: {mig_e}")
     
-    # Set version
+    # Ensure version is set
     db.set_parameter('version', "1.0.1")
 
     # Plugin checker
