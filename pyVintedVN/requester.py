@@ -107,7 +107,7 @@ class Requester:
                     # even if it's not a 200 status code
 
                     # New try : if we still get a 401, we reset the session
-                    if response.status_code == 401 and not new_session:
+                    if response.status_code in (401, 403) and not new_session:
                         new_session = True
                         self.session = requests.Session()
                         self.session.headers.update(self.HEADER)
