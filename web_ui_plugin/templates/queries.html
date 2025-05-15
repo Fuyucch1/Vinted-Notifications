@@ -17,12 +17,19 @@
             <div class="card-body">
                 <form action="/add_query" method="post">
                     <div class="row">
-                        <div class="col-md-10">
+                        <div class="col-md-8">
                             <div class="form-group">
                                 <label for="query">Vinted URL or Search Query</label>
                                 <input type="text" class="form-control" id="query" name="query"
                                        placeholder="https://www.vinted.fr/catalog?search_text=nike+dunk" required>
                                 <small class="form-text text-muted">Enter a Vinted search URL or a search term</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label for="name">Query Name (Optional)</label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                       placeholder="My Search">
                             </div>
                         </div>
                         <div class="col-md-2 d-flex align-items-center">
@@ -57,7 +64,21 @@
                         {% for query in queries %}
                         <tr>
                             <td>{{ query.id }}</td>
-                            <td>{{ query.display }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span id="query-display-{{ query.id }}">{{ query.display }}</span>
+                                    <button type="button" class="btn btn-sm btn-link ms-2" onclick="showEditNameForm('{{ query.id }}')">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <form id="edit-name-form-{{ query.id }}" action="/update_query_name/{{ query.id }}" method="post" class="d-none ms-2">
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control form-control-sm" name="name" value="{{ query.name or '' }}" placeholder="Enter name">
+                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="hideEditNameForm('{{ query.id }}');">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </td>
                             <td>{{ query.last_found_item }}</td>
                             <td>
                                 <div class="btn-group" role="group">
@@ -110,10 +131,20 @@
                 </div>
             </div>
             {% if queries %}
-            <div class="card-footer">
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
-                    <i class="bi bi-trash"></i> Remove All Queries
-                </button>
+            <div class="card-footer d-flex justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                        <i class="bi bi-trash"></i> Remove All Queries
+                    </button>
+                </div>
+                <div>
+                    <button id="exportQueriesBtn" class="btn btn-success me-2">
+                        <i class="bi bi-download"></i> Export Queries
+                    </button>
+                    <button id="importQueriesBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="bi bi-upload"></i> Import Queries
+                    </button>
+                </div>
 
                 <!-- Delete All Modal -->
                 <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel"
@@ -143,4 +174,108 @@
         </div>
     </div>
 </div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">Import Queries</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label">Select JSON File</label>
+                        <input class="form-control" type="file" id="importFile" name="file" accept=".json">
+                        <div class="form-text">Select a JSON file containing queries to import.</div>
+                    </div>
+                </form>
+                <div id="importStatus" class="alert d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="importSubmitBtn">Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showEditNameForm(queryId) {
+    document.getElementById(`query-display-${queryId}`).classList.add('d-none');
+    document.getElementById(`edit-name-form-${queryId}`).classList.remove('d-none');
+}
+
+function hideEditNameForm(queryId) {
+    document.getElementById(`query-display-${queryId}`).classList.remove('d-none');
+    document.getElementById(`edit-name-form-${queryId}`).classList.add('d-none');
+}
+
+// Export queries functionality
+document.getElementById('exportQueriesBtn').addEventListener('click', function() {
+    fetch('/export_queries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Create a download link for the JSON data
+                const blob = new Blob([data.data], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'vinted_queries_' + new Date().toISOString().slice(0, 10) + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Error exporting queries: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error exporting queries. Please try again.');
+        });
+});
+
+// Import queries functionality
+document.getElementById('importSubmitBtn').addEventListener('click', function() {
+    const fileInput = document.getElementById('importFile');
+    const statusDiv = document.getElementById('importStatus');
+    
+    // Reset status
+    statusDiv.className = 'alert d-none';
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        statusDiv.className = 'alert alert-danger';
+        statusDiv.textContent = 'Please select a file to import';
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    fetch('/import_queries', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        statusDiv.className = data.success ? 'alert alert-success' : 'alert alert-danger';
+        statusDiv.textContent = data.message || data.error;
+        
+        if (data.success) {
+            // Reload the page after a short delay to show the new queries
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusDiv.className = 'alert alert-danger';
+        statusDiv.textContent = 'Error importing queries. Please try again.';
+    });
+});
+</script>
 {% endblock %}

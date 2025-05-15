@@ -6,7 +6,7 @@ from logger import get_logger
 # Get logger for this module
 logger = get_logger(__name__)
 
-def process_query(query):
+def process_query(query, name=None):
     """
     Process a Vinted query URL by:
     1. Parsing the URL and extracting query parameters
@@ -18,6 +18,7 @@ def process_query(query):
 
     Args:
         query (str): The Vinted query URL
+        name (str, optional): Custom name for the query
 
     Returns:
         tuple: (message, is_new_query)
@@ -48,7 +49,7 @@ def process_query(query):
         return "Query already exists.", False
     else:
         # add the query to the db
-        db.add_query_to_db(processed_query)
+        db.add_query_to_db(processed_query, name)
         return "Query added.", True
 
 def get_formatted_query_list():

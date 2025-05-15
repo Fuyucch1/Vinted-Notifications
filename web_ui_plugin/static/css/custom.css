@@ -2,6 +2,7 @@
 
 /* Global styles */
 :root {
+    /* Light theme variables */
     --primary-color: #09B1BA; /* Reverted to original teal color */
     --secondary-color: #007782; /* Darker teal for secondary */
     --accent-color: #FF5E5B;
@@ -13,6 +14,8 @@
     --text-color: #333;
     --text-muted: #6c757d;
     --border-color: #eeeeee;
+    --card-bg: #ffffff;
+    --body-bg: #ffffff;
     --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
     --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
@@ -21,7 +24,70 @@
     --purple-color: #8A2BE2; /* Keep the purple color for gradient */
 }
 
+/* Dark theme variables */
+[data-bs-theme="dark"] {
+    --primary-color: #09B1BA;
+    --secondary-color: #007782;
+    --accent-color: #FF5E5B;
+    --light-bg: #2c2c2c;
+    --dark-bg: #1a1a1a;
+    --text-color: #f0f0f0;
+    --text-muted: #adb5bd;
+    --border-color: #444444;
+    --card-bg: #2c2c2c;
+    --body-bg: #222222;
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.3);
+}
+
 body {
+    color: var(--text-color);
+    background-color: var(--body-bg);
+}
+
+/* Dark mode specific styles */
+[data-bs-theme="dark"] .card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .card-header {
+    background-color: var(--dark-bg);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .table {
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .nav-link:not(.active) {
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .footer {
+    background-color: var(--dark-bg) !important;
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--dark-bg) !important;
+}
+
+/* Fix for version badge in dark mode */
+[data-bs-theme="dark"] .badge.bg-secondary {
+    background-color: #444444 !important;
+    color: #f0f0f0 !important;
+}
+
+/* Fix for price text in dark mode */
+[data-bs-theme="dark"] .text-dark {
+    color: var(--text-color) !important;
+}
+
+/* Fix for version info in header */
+[data-bs-theme="dark"] .version-info {
+    background-color: rgba(0, 0, 0, 0.4);
     color: var(--text-color);
 }
 
@@ -109,6 +175,7 @@ main {
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 
@@ -239,6 +306,29 @@ main {
     background-color: white;
     border-top: 1px solid var(--border-color);
     padding: 1rem 1.5rem;
+}
+
+/* Dark mode modal styles */
+[data-bs-theme="dark"] .modal-content {
+    background-color: var(--card-bg);
+}
+
+[data-bs-theme="dark"] .modal-header,
+[data-bs-theme="dark"] .modal-footer {
+    background-color: var(--dark-bg);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+}
+
+[data-bs-theme="dark"] .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
 }
 
 /* Vinted-style footer */
