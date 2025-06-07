@@ -1,8 +1,9 @@
-import multiprocessing, time, core, os, db, configuration_values
+import multiprocessing, signal, time, db, core, configuration_values, queue, os, sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
 from rss_feed_plugin.rss_feed import rss_feed_process
 from web_ui_plugin.web_ui import web_ui_process
+import keep_alive
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -15,37 +16,92 @@ current_query_refresh_delay = None
 
 def scraper_process(items_queue):
     logger.info("Scrape process started")
+    
+    # Set up SIGTERM handler for graceful shutdown
+    def sigterm_handler(signum, frame):
+        # Avoid logging during shutdown to prevent reentrant call errors
+        # Use a more graceful exit that doesn't interfere with logging shutdown
+        import os
+        os._exit(0)
+    
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
+    # Declare the global variable first
+    global current_query_refresh_delay
+    
     # Get the query refresh delay from the database
-    current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
+    query_refresh_delay = db.get_parameter("query_refresh_delay")
+    # Set a default value if the parameter doesn't exist yet
+    current_query_refresh_delay = int(query_refresh_delay) if query_refresh_delay is not None else 60
     logger.info(f"Using query refresh delay of {current_query_refresh_delay} seconds")
 
     scraper_scheduler = BackgroundScheduler()
     scraper_scheduler.add_job(core.process_items, 'interval', seconds=current_query_refresh_delay, args=[items_queue],
                               name="scraper")
     scraper_scheduler.start()
+    
     try:
         # Keep the process running
         while True:
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
-        scraper_scheduler.shutdown()
+        logger.info("Received shutdown signal, initiating graceful shutdown...")
+    except Exception as e:
+        logger.error(f"Unexpected error in scraper process: {e}", exc_info=True)
+    finally:
+        # Ensure scheduler is properly shut down
+        try:
+            # Avoid logging during scheduler shutdown to prevent reentrant call errors
+            scraper_scheduler.shutdown(wait=True)  # Wait for jobs to complete
+        except Exception as shutdown_error:
+            # Silently handle shutdown errors to avoid logging conflicts
+            pass
+        
         logger.info("Scrape process stopped")
 
 
 def item_extractor(items_queue, new_items_queue):
     logger.info("Item extractor process started")
+    
+    # Set up SIGTERM handler for graceful shutdown
+    def sigterm_handler(signum, frame):
+        # Avoid logging during shutdown to prevent reentrant call errors
+        # Use a more graceful exit that doesn't interfere with logging shutdown
+        import os
+        os._exit(0)
+    
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    
     try:
         while True:
             # Check if there's an item in the queue
             core.clear_item_queue(items_queue, new_items_queue)
             time.sleep(0.1)  # Small sleep to prevent high CPU usage
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Consumer process stopped")
+        logger.info("Received shutdown signal, processing remaining items...")
+        # Clear remaining items if any
+        try:
+            core.clear_item_queue(items_queue, new_items_queue)
+        except Exception as cleanup_error:
+            logger.error(f"Error processing remaining items during shutdown: {cleanup_error}")
+        logger.info("Item extractor process stopped")
+    except Exception as e:
+        logger.error(f"Unexpected error in item extractor: {e}", exc_info=True)
+        logger.info("Item extractor process stopped due to error")
 
 
 def dispatcher_function(input_queue, rss_queue, telegram_queue):
     logger.info("Dispatcher process started")
+    
+    # Set up SIGTERM handler for graceful shutdown
+    def sigterm_handler(signum, frame):
+        # Avoid logging during shutdown to prevent reentrant call errors
+        # Use a more graceful exit that doesn't interfere with logging shutdown
+        import os
+        os._exit(0)
+    
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    
     try:
         while True:
             # Get from input queue
@@ -79,13 +135,14 @@ def check_refresh_delay(items_queue):
     global scrape_process, current_query_refresh_delay
 
     # Check if the scheduler is running
-
     if scrape_process is None or not scrape_process.is_alive():
         return
 
     # Get the current value from the database
     try:
-        new_delay = int(db.get_parameter("query_refresh_delay"))
+        query_refresh_delay = db.get_parameter("query_refresh_delay")
+        # Set a default value if the parameter doesn't exist yet
+        new_delay = int(query_refresh_delay) if query_refresh_delay is not None else 60
 
         # If the delay has changed, update the scheduler
         if new_delay != current_query_refresh_delay:
@@ -94,9 +151,44 @@ def check_refresh_delay(items_queue):
             # Update the global variable
             current_query_refresh_delay = new_delay
 
-            # Remove the existing job and add a new one with the updated interval
-            scrape_process.terminate()
-            scrape_process.join()
+            # Graceful shutdown with timeout to prevent hanging
+            logger.info("Initiating graceful shutdown of scraper process...")
+            
+            # Send termination signal - use SIGTERM on POSIX, terminate on Windows
+            import os
+            if hasattr(os, 'kill') and hasattr(scrape_process, 'pid'):
+                # POSIX systems - send SIGTERM first for graceful shutdown
+                try:
+                    os.kill(scrape_process.pid, signal.SIGTERM)
+                    logger.info("Sent SIGTERM to scraper process")
+                except (OSError, AttributeError):
+                    # Fallback to terminate if SIGTERM fails
+                    scrape_process.terminate()
+            else:
+                # Windows or other platforms
+                scrape_process.terminate()
+            
+            # Wait for graceful shutdown with timeout
+            try:
+                scrape_process.join(timeout=10)  # 10 second timeout
+                if scrape_process.is_alive():
+                    logger.warning("Scraper process did not terminate gracefully, forcing shutdown")
+                    scrape_process.kill()  # Force kill if still alive
+                    scrape_process.join()  # Wait for forced termination
+            except Exception as join_error:
+                logger.error(f"Error during process shutdown: {join_error}")
+                # Force kill as last resort
+                try:
+                    scrape_process.kill()
+                    scrape_process.join()
+                except Exception:
+                    pass
+            
+            # Small delay to ensure cleanup
+            time.sleep(0.5)
+            
+            # Start new process
+            logger.info("Starting new scraper process with updated delay")
             scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
             scrape_process.start()
 
@@ -165,11 +257,50 @@ def plugin_checker():
 
 if __name__ == "__main__":
     # Starting sequence
-    # Db check
+    # Db check and initialization
     if not os.path.exists("./vinted_notifications.db"):
+        # Database file doesn't exist, create it with all tables
         db.create_sqlite_db()
         logger.info("Database created successfully")
-    # Set version
+    else:
+        # Database file exists, but we need to check if all tables are properly initialized
+        try:
+            # Try to access a table to check if it exists
+            test_value = db.get_parameter('version')
+            if test_value is None:
+                # Version parameter doesn't exist, attempt to migrate first
+                logger.info("Database exists but version parameter not found, attempting migration")
+                try:
+                    # Try to migrate existing tables if possible
+                    db.migrate_db_if_needed()
+                    # Set version if it doesn't exist
+                    db.set_parameter('version', "1.0.1")
+                    logger.info("Database migrated successfully")
+                except Exception as e:
+                    logger.error(f"Error migrating database: {e}")
+                    # If migration fails, don't try to recreate tables as that would cause errors
+                    # Just ensure the version is set
+                    try:
+                        db.set_parameter('version', "1.0.1")
+                    except Exception:
+                        logger.error("Could not set version parameter, database may be corrupted")
+        except Exception as e:
+            logger.error(f"Error checking database: {e}")
+            # Tables likely don't exist at all, create them
+            try:
+                db.create_sqlite_db()
+                logger.info("Database tables created successfully")
+            except sqlite3.OperationalError as sql_e:
+                # This likely means tables already exist partially
+                logger.error(f"Could not create all tables, some may already exist: {sql_e}")
+                # Try to migrate instead
+                try:
+                    db.migrate_db_if_needed()
+                    logger.info("Attempted database migration after partial table creation")
+                except Exception as mig_e:
+                    logger.error(f"Error during migration attempt: {mig_e}")
+    
+    # Ensure version is set
     db.set_parameter('version', "1.0.1")
 
     # Plugin checker
@@ -183,7 +314,9 @@ if __name__ == "__main__":
 
     # 1. Create and start the scrape process
     # This process will scrape items and put them in the items_queue
-    current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
+    query_refresh_delay = db.get_parameter("query_refresh_delay")
+    # Set a default value if the parameter doesn't exist yet
+    current_query_refresh_delay = int(query_refresh_delay) if query_refresh_delay is not None else 60
     scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
     scrape_process.start()
 
@@ -210,6 +343,20 @@ if __name__ == "__main__":
     web_ui_process_instance = multiprocessing.Process(target=web_ui_process)
     web_ui_process_instance.start()
     logger.info(f"Web UI started on port {configuration_values.WEB_UI_PORT}")
+    
+    # 6. Start the keep-alive service to prevent hosting platforms from shutting down
+    # This will ping the web UI periodically to keep the application active
+    keep_alive_enabled = db.get_parameter('keep_alive_enabled')
+    if keep_alive_enabled == 'True':
+        # Get keep-alive interval from database, default to 5 minutes (300 seconds)
+        keep_alive_interval = db.get_parameter('keep_alive_interval')
+        interval = int(keep_alive_interval) if keep_alive_interval else 300
+        
+        # Start keep-alive service
+        keep_alive.start_keep_alive(ping_interval=interval)
+        logger.info(f"Keep-alive service started with {interval} second interval")
+    else:
+        logger.info("Keep-alive service is disabled")
 
 
     try:
@@ -227,6 +374,11 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         # Handle Ctrl+C gracefully
         logger.info("Main process interrupted")
+
+        # Stop keep-alive service
+        if keep_alive.is_keep_alive_running():
+            logger.info("Stopping keep-alive service...")
+            keep_alive.stop_keep_alive()
 
         # Shutdown the monitor scheduler
         monitor_scheduler.shutdown()
@@ -262,3 +414,4 @@ if __name__ == "__main__":
             rss_process.join()
 
         logger.info("All processes terminated")
+ # t

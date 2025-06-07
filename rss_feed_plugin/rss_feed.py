@@ -1,5 +1,5 @@
 from flask import Flask, Response
-import threading, time, db, datetime, html
+import threading, time, db, datetime, html, queue
 from logger import get_logger
 from feedgen.feed import FeedGenerator
 
@@ -38,14 +38,15 @@ class RSSFeed:
                 logger.error(f"Error checking RSS queue: {str(e)}", exc_info=True)
 
     def check_rss_queue(self):
-        if not self.queue.empty():
-            try:
-                content, url, text, buy_url, buy_text = self.queue.get()
-
-                # Add item to the feed
-                self.add_item_to_feed(content, url)
-            except Exception as e:
-                logger.error(f"Error processing item for RSS feed: {str(e)}", exc_info=True)
+        try:
+            content, url, text, buy_url, buy_text = self.queue.get_nowait()
+            # Add item to the feed
+            self.add_item_to_feed(content, url)
+        except queue.Empty:
+            # Queue is empty, nothing to process
+            pass
+        except Exception as e:
+            logger.error(f"Error processing item for RSS feed: {str(e)}", exc_info=True)
 
     def add_item_to_feed(self, content, url):
         # Extract title from content (assuming it's in the format from configuration_values.MESSAGE)
@@ -57,7 +58,7 @@ class RSSFeed:
                 title_end = content.find('\n', title_start)
                 if title_end > 0:
                     title = content[title_start:title_end]
-        except:
+        except (AttributeError, TypeError, ValueError):
             pass
 
         # Create a new entry

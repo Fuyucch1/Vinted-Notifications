@@ -3,31 +3,48 @@
 {% block title %}Allowlist - Vinted Notifications{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Country Allowlist</h1>
+<!-- Modern Header with Description -->
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1"><i class="bi bi-globe2 me-2 text-primary"></i>Country Allowlist</h1>
+        <p class="text-muted mb-0">Manage which countries are allowed for item filtering</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="exportBtn" title="Export allowlist">
+            <i class="bi bi-download me-1"></i>Export
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="importBtn" title="Import allowlist">
+            <i class="bi bi-upload me-1"></i>Import
+        </button>
+    </div>
 </div>
 
+<!-- Add Country Section -->
 <div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-plus-circle me-2 text-info"></i>
-                <h5 class="card-title mb-0">Add Country</h5>
-            </div>
-            <div class="card-body">
-                <form action="/add_country" method="post">
-                    <div class="row">
-                        <div class="col-md-10">
-                            <div class="form-group">
-                                <label for="country">Country Code (2 letters)</label>
-                                <input type="text" class="form-control" id="country" name="country" placeholder="FR"
-                                       maxlength="2" required>
-                                <small class="form-text text-muted">Enter a 2-letter country code (e.g., FR for France,
-                                    DE for Germany)</small>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-plus-circle-fill me-2 text-success fs-5"></i>
+                    <h5 class="card-title mb-0">Add Country to Allowlist</h5>
+                </div>
+                <form action="/add_country" method="post" class="add-country-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-8 col-lg-6">
+                            <label for="country" class="form-label fw-medium">Country Code</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-flag"></i></span>
+                                <input type="text" class="form-control form-control-lg" id="country" name="country" 
+                                       placeholder="e.g., FR, DE, ES" maxlength="2" required 
+                                       style="text-transform: uppercase;">
                             </div>
+                            <div class="form-text">Enter a 2-letter ISO country code</div>
                         </div>
-                        <div class="col-md-2 d-flex align-items-center">
-                            <button type="submit" class="btn btn-primary w-100">Add Country</button>
+                        <div class="col-md-4 col-lg-3 d-flex align-items-center" style="margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-success btn-lg w-100 d-flex align-items-center justify-content-center">
+                                <i class="bi bi-plus-circle me-2"></i>Add Country
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -36,75 +53,103 @@
     </div>
 </div>
 
+<!-- Current Allowlist Section -->
 <div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-globe me-2 text-info"></i>
-                <h5 class="card-title mb-0">Current Allowlist</h5>
-            </div>
-            <div class="card-body">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-list-check me-2 text-primary fs-5"></i>
+                        <h5 class="card-title mb-0">Current Allowlist</h5>
+                        {% if countries %}
+                        <span class="badge bg-primary ms-2">{{ countries|length }} countries</span>
+                        {% endif %}
+                    </div>
+                    {% if countries %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#clearAllowlistModal">
+                        <i class="bi bi-trash me-1"></i>Clear All
+                    </button>
+                    {% endif %}
+                </div>
+
                 {% if countries %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                        <tr>
-                            <th>Country Code</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
+                <!-- Country Tags/Pills Display -->
+                <div class="country-tags-container">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
                         {% for country in countries %}
-                        <tr>
-                            <td>{{ country }}</td>
-                            <td>
-                                <form action="/remove_country/{{ country }}" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i> Remove
+                        <div class="country-tag position-relative">
+                            <span class="badge bg-primary fs-6 px-3 py-2 d-flex align-items-center country-pill" 
+                                  data-country="{{ country }}">
+                                <i class="bi bi-flag me-2"></i>
+                                <span class="country-code">{{ country.upper() }}</span>
+                                <form action="/remove_country/{{ country }}" method="post" class="d-inline ms-2 remove-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                    <button type="submit" class="btn btn-link p-0 text-white remove-country-btn" 
+                                            title="Remove {{ country }}" data-country="{{ country }}">
+                                        <i class="bi bi-x-circle"></i>
                                     </button>
                                 </form>
-                            </td>
-                        </tr>
+                            </span>
+                        </div>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                    </div>
                 </div>
-                <div class="mt-3">
-                    <button type="button" class="btn btn-danger" data-bs-toggle="modal"
-                            data-bs-target="#clearAllowlistModal">
-                        <i class="bi bi-trash"></i> Clear Allowlist
-                    </button>
 
-                    <!-- Clear Allowlist Modal -->
-                    <div class="modal fade" id="clearAllowlistModal" tabindex="-1"
-                         aria-labelledby="clearAllowlistModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="clearAllowlistModalLabel">Confirm Clearing
-                                        Allowlist</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
+                <!-- Bulk Actions -->
+                <div class="d-flex flex-wrap gap-2 pt-3 border-top">
+                    <small class="text-muted align-self-center me-auto">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Click the <i class="bi bi-x-circle"></i> icon to remove a country
+                    </small>
+                </div>
+
+                <!-- Clear Allowlist Modal -->
+                <div class="modal fade" id="clearAllowlistModal" tabindex="-1"
+                     aria-labelledby="clearAllowlistModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title" id="clearAllowlistModalLabel">
+                                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                    Clear Entire Allowlist
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body pt-2">
+                                <p class="mb-2">Are you sure you want to remove <strong>all {{ countries|length }} countries</strong> from the allowlist?</p>
+                                <div class="alert alert-warning d-flex align-items-center mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <small>This will allow items from all countries to be shown.</small>
                                 </div>
-                                <div class="modal-body">
-                                    Are you sure you want to clear the entire allowlist? This will allow items from all
-                                    countries.
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x me-1"></i>Cancel
+                                </button>
+                                <form action="/clear_allowlist" method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash me-1"></i>Clear Allowlist
                                     </button>
-                                    <form action="/clear_allowlist" method="post" class="d-inline">
-                                        <button type="submit" class="btn btn-danger">Clear Allowlist</button>
-                                    </form>
-                                </div>
+                                </form>
                             </div>
                         </div>
                     </div>
                 </div>
                 {% else %}
-                <div class="alert alert-info show">
-                    <i class="bi bi-info-circle"></i> No countries in the allowlist. Items from all countries will be
-                    shown.
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="bi bi-globe text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    <h6 class="text-muted mb-2">No countries in allowlist</h6>
+                    <p class="text-muted mb-3">Items from all countries will be shown</p>
+                    <small class="text-muted">
+                        <i class="bi bi-arrow-up me-1"></i>
+                        Add your first country using the form above
+                    </small>
                 </div>
                 {% endif %}
             </div>
@@ -112,27 +157,263 @@
     </div>
 </div>
 
+<!-- Information Section -->
 <div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-info-circle me-2 text-info"></i>
-                <h5 class="card-title mb-0">About Country Allowlist</h5>
-            </div>
-            <div class="card-body">
-                <p>The country allowlist allows you to filter items based on the seller's country. Only items from
-                    sellers in the allowed countries will be shown.</p>
-                <p>If the allowlist is empty, items from all countries will be shown.</p>
-                <p>Country codes are 2-letter ISO codes, such as:</p>
-                <ul>
-                    <li><strong>FR</strong> - France</li>
-                    <li><strong>DE</strong> - Germany</li>
-                    <li><strong>ES</strong> - Spain</li>
-                    <li><strong>IT</strong> - Italy</li>
-                    <li><strong>UK</strong> - United Kingdom</li>
-                </ul>
+    <div class="col-12">
+        <div class="card border-0 bg-light">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-lightbulb me-2 text-info fs-5"></i>
+                    <h6 class="card-title mb-0">How it works</h6>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-2">The country allowlist filters items based on the seller's location. Only items from sellers in allowed countries will be displayed.</p>
+                        <p class="mb-0 text-muted"><small>When the allowlist is empty, items from all countries are shown.</small></p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted mb-2">Common Country Codes:</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-secondary">FR</span>
+                            <span class="badge bg-secondary">DE</span>
+                            <span class="badge bg-secondary">ES</span>
+                            <span class="badge bg-secondary">IT</span>
+                            <span class="badge bg-secondary">GB</span>
+                            <span class="badge bg-secondary">NL</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Hidden Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">
+                    <i class="bi bi-upload me-2"></i>Import Countries
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="importText" class="form-label">Country Codes</label>
+                    <textarea class="form-control" id="importText" rows="4" 
+                              placeholder="Enter country codes separated by commas or new lines\ne.g., FR, DE, ES\nor\nFR\nDE\nES"></textarea>
+                    <div class="form-text">Enter 2-letter country codes separated by commas or new lines</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="importConfirm">
+                    <i class="bi bi-upload me-1"></i>Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styles for allowlist page */
+.country-pill {
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.country-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.remove-country-btn {
+    border: none !important;
+    background: none !important;
+    color: inherit !important;
+    font-size: 0.9em;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.remove-country-btn:hover {
+    opacity: 1;
+    color: inherit !important;
+}
+
+.country-tag {
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.add-country-form input[type="text"] {
+    transition: border-color 0.2s ease;
+}
+
+.add-country-form input[type="text"]:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] .card.bg-light {
+    background-color: var(--bs-dark) !important;
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .country-pill:hover {
+    box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+}
+
+/* Responsive adjustments */
+ @media (max-width: 768px) {
+     .country-tags-container .d-flex {
+         gap: 0.5rem !important;
+     }
+     
+     .country-pill {
+         font-size: 0.875rem !important;
+         padding: 0.5rem 0.75rem !important;
+     }
+ }
+ 
+ /* Fade out animation */
+ @keyframes fadeOut {
+     from {
+         opacity: 1;
+         transform: scale(1);
+     }
+     to {
+         opacity: 0;
+         transform: scale(0.8);
+     }
+ }
+ </style>
+
+<script>
+// Enhanced JavaScript for allowlist functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-uppercase country input
+    const countryInput = document.getElementById('country');
+    if (countryInput) {
+        countryInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+
+    // Export functionality
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            try {
+                const countries = Array.from(document.querySelectorAll('.country-code')).map(el => el.textContent);
+                const dataStr = JSON.stringify(countries, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'allowlist-countries.json';
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('Export failed: ' + e.message);
+                console.error('Export error:', e);
+            }
+        });
+    }
+
+    // Import functionality
+    const importBtn = document.getElementById('importBtn');
+    const importModal = new bootstrap.Modal(document.getElementById('importModal'));
+    const importConfirm = document.getElementById('importConfirm');
+    
+    if (importBtn) {
+        importBtn.addEventListener('click', function() {
+            importModal.show();
+        });
+    }
+
+    if (importConfirm) {
+        importConfirm.addEventListener('click', function() {
+            const importText = document.getElementById('importText').value;
+            
+            // ISO 3166-1 alpha-2 country codes (common ones)
+            const validCountryCodes = [
+                'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ',
+                'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS',
+                'BT', 'BV', 'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN',
+                'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE',
+                'EG', 'EH', 'ER', 'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD', 'GE', 'GF',
+                'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY', 'HK', 'HM',
+                'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM',
+                'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC',
+                'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK',
+                'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA',
+                'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG',
+                'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO', 'RS', 'RU', 'RW',
+                'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS',
+                'ST', 'SV', 'SX', 'SY', 'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO',
+                'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI',
+                'VN', 'VU', 'WF', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW'
+            ];
+            
+            const inputCountries = importText.split(/[,\n]/).map(c => c.trim().toUpperCase()).filter(c => c.length > 0);
+            // Handle UK as alias for GB (United Kingdom)
+            const normalizedCountries = inputCountries.map(c => c === 'UK' ? 'GB' : c);
+            const validCountries = normalizedCountries.filter(c => validCountryCodes.includes(c));
+            const invalidCountries = inputCountries.filter(c => {
+                const normalized = c === 'UK' ? 'GB' : c;
+                return !validCountryCodes.includes(normalized);
+            });
+            
+            if (invalidCountries.length > 0) {
+                alert(`Invalid country codes found: ${invalidCountries.join(', ')}\nPlease use valid ISO 3166-1 alpha-2 country codes.`);
+                return;
+            }
+            
+            if (validCountries.length > 0) {
+                // For demo purposes - in real implementation, this would make API calls
+                console.log('Would import countries:', validCountries);
+                alert(`Would import ${validCountries.length} countries: ${validCountries.join(', ')}`);
+                importModal.hide();
+            } else {
+                alert('Please enter valid 2-letter ISO country codes.');
+            }
+        });
+    }
+
+    // Smooth removal animation
+    document.querySelectorAll('.remove-country-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const countryTag = this.closest('.country-tag');
+            const country = this.dataset.country;
+            
+            if (confirm(`Remove ${country} from allowlist?`)) {
+                countryTag.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    this.closest('.remove-form').submit();
+                }, 300);
+            }
+        });
+    });
+
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
 {% endblock %}

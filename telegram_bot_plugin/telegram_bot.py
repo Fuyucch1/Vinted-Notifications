@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.error import RetryAfter
-import db, core, asyncio
+import db, core, asyncio, queue
 from logger import get_logger
 
 # Get logger for this module
@@ -16,7 +16,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.error(f"Error in hello command: {str(e)}", exc_info=True)
         try:
             await update.message.reply_text('An error occurred. Please try again later.')
-        except:
+        except Exception:
             pass
 
 
@@ -84,7 +84,7 @@ class LeRobot:
             logger.error(f"Error adding query: {str(e)}", exc_info=True)
             try:
                 await update.message.reply_text('An error occurred while adding the query. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     # Remove a query from the db
@@ -111,7 +111,7 @@ class LeRobot:
             logger.error(f"Error removing query: {str(e)}", exc_info=True)
             try:
                 await update.message.reply_text('An error occurred while removing the query. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     # get all queries from the db
@@ -124,7 +124,7 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while retrieving the queries. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     ### ALLOWLIST ###
@@ -138,7 +138,7 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while clearing the allowlist. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     async def add_country(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -157,7 +157,7 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while adding the country to the allowlist. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     async def remove_country(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -176,21 +176,22 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while removing the country from the allowlist. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     async def allowlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
-            if db.get_allowlist() == 0:
+            allowlist = db.get_allowlist()
+            if not allowlist:
                 await update.message.reply_text(f'No allowlist set. All countries are allowed.')
             else:
-                await update.message.reply_text(f'Current allowlist: {db.get_allowlist()}')
+                await update.message.reply_text(f'Current allowlist: {allowlist}')
         except Exception as e:
             logger.error(f"Error retrieving allowlist: {str(e)}", exc_info=True)
             try:
                 await update.message.reply_text(
                     'An error occurred while retrieving the allowlist. Please try again later.')
-            except:
+            except Exception:
                 pass
 
     ### TELEGRAM SPECIFIC FUNCTIONS ###
@@ -229,10 +230,10 @@ class LeRobot:
     async def check_telegram_queue(self, context: ContextTypes.DEFAULT_TYPE):
         try:
             while 1:
-                if not self.new_items_queue.empty():
-                    content, url, text, buy_url, buy_text = self.new_items_queue.get()
+                try:
+                    content, url, text, buy_url, buy_text = self.new_items_queue.get_nowait()
                     await self.send_new_post(content, url, text, buy_url, buy_text)
-                else:
+                except queue.Empty:
                     await asyncio.sleep(0.1)
                     pass
         except Exception as e:

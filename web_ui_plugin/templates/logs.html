@@ -4,105 +4,234 @@
 
 {% block head %}
 <style>
+    .log-viewer {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        background: var(--bs-body-bg);
+    }
+
     .log-entry {
-        font-family: monospace;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.4;
         white-space: pre-wrap;
         word-wrap: break-word;
+        margin: 0;
     }
 
-    .log-info {
-        color: #0d6efd;
+    .log-row {
+        border-bottom: 1px solid var(--bs-border-color-translucent);
+        transition: background-color 0.15s ease-in-out;
     }
 
-    .log-warning {
-        color: #ffc107;
+    .log-row:hover {
+        background-color: var(--bs-secondary-bg);
     }
 
-    .log-error {
-        color: #dc3545;
+    .log-row:last-child {
+        border-bottom: none;
     }
 
-    .log-debug {
-        color: #6c757d;
+    .log-timestamp {
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: var(--bs-secondary-color);
+        white-space: nowrap;
     }
 
-    .log-critical {
-        color: #721c24;
-        font-weight: bold;
+    .log-module {
+        font-size: 0.8rem;
+        color: var(--bs-secondary-color);
+        font-weight: 500;
+    }
+
+    .log-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    .log-badge.DEBUG {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .log-badge.INFO {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .log-badge.WARNING {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .log-badge.ERROR {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .log-badge.CRITICAL {
+        background-color: #721c24;
+        color: white;
+    }
+
+    .copy-btn {
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+        font-size: 0.75rem;
+    }
+
+    .log-row:hover .copy-btn {
+        opacity: 1;
+    }
+
+    .filter-bar {
+        background: var(--bs-tertiary-bg);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .search-input {
+        border-radius: 0.375rem;
+    }
+
+    .log-controls {
+        gap: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .log-viewer {
+            max-height: 400px;
+        }
+        
+        .log-entry {
+            font-size: 0.8rem;
+        }
+        
+        .log-timestamp {
+            font-size: 0.7rem;
+        }
+        
+        .filter-bar {
+            padding: 0.75rem;
+        }
+    }
+
+    /* Dark mode compatibility */
+    [data-bs-theme="dark"] .log-viewer {
+        background: var(--bs-dark);
+        border-color: var(--bs-border-color);
+    }
+
+    [data-bs-theme="dark"] .log-row:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    [data-bs-theme="dark"] .filter-bar {
+        background: var(--bs-dark);
+        border: 1px solid var(--bs-border-color);
     }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Header Section -->
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Logs</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBtn">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Now
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAutoRefreshBtn" data-state="on">
-                <i class="bi bi-play-circle me-1"></i> Auto-Refresh: ON
-            </button>
+    <div>
+        <h1 class="h2 mb-1">
+            <i class="bi bi-journal-text text-info me-2"></i>
+            Application Logs
+        </h1>
+        <p class="text-muted mb-0">Monitor system activity and debug information</p>
+    </div>
+    <div class="d-flex log-controls flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-primary" id="refreshBtn">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAutoRefreshBtn" data-state="on">
+            <i class="bi bi-play-circle me-1"></i> Auto-Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger" id="clearLogsBtn">
+            <i class="bi bi-trash me-1"></i> Clear
+        </button>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" class="form-control search-input" id="searchInput" placeholder="Search log messages...">
+            </div>
         </div>
-        <div class="btn-group">
-            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
-                    aria-expanded="false">
-                <i class="bi bi-filter me-1"></i> Log Level
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item log-level-filter active" href="#" data-level="all">All Levels</a></li>
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                <li><a class="dropdown-item log-level-filter" href="#" data-level="DEBUG">Debug</a></li>
-                <li><a class="dropdown-item log-level-filter" href="#" data-level="INFO">Info</a></li>
-                <li><a class="dropdown-item log-level-filter" href="#" data-level="WARNING">Warning</a></li>
-                <li><a class="dropdown-item log-level-filter" href="#" data-level="ERROR">Error</a></li>
-                <li><a class="dropdown-item log-level-filter" href="#" data-level="CRITICAL">Critical</a></li>
-            </ul>
+        <div class="col-md-4">
+            <select class="form-select" id="logLevelSelect">
+                <option value="all">All Levels</option>
+                <option value="DEBUG">Debug</option>
+                <option value="INFO">Info</option>
+                <option value="WARNING">Warning</option>
+                <option value="ERROR">Error</option>
+                <option value="CRITICAL">Critical</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="autoScrollToggle" checked>
+                <label class="form-check-label" for="autoScrollToggle">
+                    Auto-scroll
+                </label>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Log Viewer -->
 <div class="row">
-    <div class="col-md-12">
-        <div class="card">
+    <div class="col-12">
+        <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
-                    <i class="bi bi-journal-text me-2 text-info"></i>
-                    <h5 class="card-title mb-0">Log Entries</h5>
+                    <i class="bi bi-terminal me-2 text-success"></i>
+                    <h5 class="card-title mb-0">Log Stream</h5>
                 </div>
-                <span class="badge bg-secondary" id="logCount">0 entries</span>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-secondary" id="logCount">0 entries</span>
+                    <small class="text-muted">logs/vinted.log</small>
+                </div>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                        <tr>
-                            <th style="width: 180px;">Timestamp</th>
-                            <th style="width: 100px;">Level</th>
-                            <th style="width: 150px;">Module</th>
-                            <th>Message</th>
-                        </tr>
-                        </thead>
-                        <tbody id="logEntries">
-                        <tr>
-                            <td colspan="4" class="text-center py-4">Loading logs...</td>
-                        </tr>
-                        </tbody>
-                    </table>
+                <div class="log-viewer" id="logViewer">
+                    <div id="logEntries">
+                        <div class="d-flex justify-content-center align-items-center py-5">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mb-0">Loading log entries...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card-footer d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="text-muted">Log file: logs/vinted.log</span>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="spinner-grow spinner-grow-sm text-success" role="status" id="liveIndicator">
+                        <span class="visually-hidden">Live</span>
+                    </div>
+                    <small class="text-muted">Live monitoring active</small>
                 </div>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary" id="loadMoreBtn">
-                        <i class="bi bi-arrow-down-circle me-1"></i> Load More
-                    </button>
-                </div>
+                <button class="btn btn-sm btn-outline-primary" id="loadMoreBtn">
+                    <i class="bi bi-arrow-down-circle me-1"></i> Load More
+                </button>
             </div>
         </div>
     </div>
@@ -112,73 +241,203 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // DOM Elements
         const logEntries = document.getElementById('logEntries');
         const logCount = document.getElementById('logCount');
+        const logViewer = document.getElementById('logViewer');
         const refreshBtn = document.getElementById('refreshBtn');
         const toggleAutoRefreshBtn = document.getElementById('toggleAutoRefreshBtn');
+        const clearLogsBtn = document.getElementById('clearLogsBtn');
         const loadMoreBtn = document.getElementById('loadMoreBtn');
-        const logLevelFilters = document.querySelectorAll('.log-level-filter');
+        const searchInput = document.getElementById('searchInput');
+        const logLevelSelect = document.getElementById('logLevelSelect');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
+        const liveIndicator = document.getElementById('liveIndicator');
 
+        // State variables
         let autoRefreshInterval;
         let currentLogLevel = 'all';
+        let currentSearchTerm = '';
         let currentOffset = 0;
+        let allLogs = [];
+        let filteredLogs = [];
         const limit = 100;
+        let autoScrollEnabled = true;
 
-        // Function to fetch logs
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Utility function to create log row HTML
+        function createLogRow(log, index) {
+            // Fix timestamp format: replace comma with dot for milliseconds
+            const fixedTimestamp = log.timestamp.replace(',', '.');
+            const timestamp = new Date(fixedTimestamp).toLocaleString();
+            const logId = `log-${index}`;
+            
+            // Sanitize log data to prevent XSS
+            const sanitizedMessage = escapeHtml(log.message);
+            const sanitizedModule = escapeHtml(log.module || 'System');
+            const sanitizedLevel = escapeHtml(log.level);
+            
+            return `
+                <div class="log-row p-3 d-flex align-items-start gap-3" data-level="${sanitizedLevel}" data-log-id="${logId}">
+                    <div class="log-timestamp flex-shrink-0" style="min-width: 140px;">
+                        ${timestamp}
+                    </div>
+                    <div class="flex-shrink-0">
+                        <span class="badge log-badge ${sanitizedLevel}">${sanitizedLevel}</span>
+                    </div>
+                    <div class="log-module flex-shrink-0" style="min-width: 120px;">
+                        ${sanitizedModule}
+                    </div>
+                    <div class="log-entry flex-grow-1">
+                        ${sanitizedMessage}
+                    </div>
+                    <div class="flex-shrink-0">
+                        <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                data-log-id="${logId}" 
+                                title="Copy log entry">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Function to copy log entry to clipboard using event delegation
+        function copyLogEntry(logId) {
+            const logRow = document.querySelector(`[data-log-id="${logId}"]`);
+            if (logRow) {
+                const timestamp = logRow.querySelector('.log-timestamp').textContent.trim();
+                const level = logRow.querySelector('.log-badge').textContent.trim();
+                const module = logRow.querySelector('.log-module').textContent.trim();
+                const message = logRow.querySelector('.log-entry').textContent.trim();
+                
+                const logText = `[${timestamp}] ${level} ${module}: ${message}`;
+                
+                navigator.clipboard.writeText(logText).then(() => {
+                    // Show temporary success feedback
+                    const btn = logRow.querySelector('.copy-btn');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check text-success"></i>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                    }, 1000);
+                }).catch(err => {
+                    console.error('Failed to copy log entry:', err);
+                });
+            }
+        }
+        
+        // Add event delegation for copy buttons
+        logEntries.addEventListener('click', function(e) {
+            if (e.target.closest('.copy-btn')) {
+                const button = e.target.closest('.copy-btn');
+                const logId = button.getAttribute('data-log-id');
+                if (logId) {
+                    copyLogEntry(logId);
+                }
+            }
+        });
+
+        // Function to filter logs based on search term and level
+        function filterLogs() {
+            filteredLogs = allLogs.filter(log => {
+                const matchesLevel = currentLogLevel === 'all' || log.level === currentLogLevel;
+                const matchesSearch = currentSearchTerm === '' || 
+                    (log.message && log.message.toLowerCase().includes(currentSearchTerm.toLowerCase())) ||
+                    (log.module && log.module.toLowerCase().includes(currentSearchTerm.toLowerCase()));
+                return matchesLevel && matchesSearch;
+            });
+            renderLogs();
+        }
+
+        // Function to render filtered logs
+        function renderLogs() {
+            if (filteredLogs.length === 0) {
+                logEntries.innerHTML = `
+                    <div class="d-flex justify-content-center align-items-center py-5">
+                        <div class="text-center">
+                            <i class="bi bi-inbox display-4 text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No log entries found</p>
+                            <small class="text-muted">Try adjusting your filters</small>
+                        </div>
+                    </div>
+                `;
+            } else {
+                logEntries.innerHTML = filteredLogs.map((log, index) => createLogRow(log, index)).join('');
+                
+                // Auto-scroll to top if enabled (newest logs are at the top)
+                if (autoScrollEnabled) {
+                    logViewer.scrollTop = 0;
+                }
+            }
+            
+            logCount.textContent = `${filteredLogs.length} entries`;
+        }
+
+        // Function to fetch logs from API
         function fetchLogs(offset = 0, append = false) {
-            fetch(`/api/logs?offset=${offset}&limit=${limit}&level=${currentLogLevel}`)
+            fetch(`/api/logs?offset=${offset}&limit=${limit}&level=all`)
                 .then(response => response.json())
                 .then(data => {
                     if (!append) {
-                        logEntries.innerHTML = '';
+                        allLogs = data.logs || [];
                         currentOffset = 0;
-                    }
-
-                    if (data.logs.length === 0) {
-                        if (!append) {
-                            logEntries.innerHTML = '<tr><td colspan="4" class="text-center py-4">No log entries found</td></tr>';
-                        }
-                        loadMoreBtn.disabled = true;
                     } else {
-                        loadMoreBtn.disabled = false;
-
-                        data.logs.forEach(log => {
-                            const row = document.createElement('tr');
-
-                            // Add CSS class based on log level
-                            if (log.level === 'ERROR' || log.level === 'CRITICAL') {
-                                row.classList.add('table-danger');
-                            } else if (log.level === 'WARNING') {
-                                row.classList.add('table-warning');
-                            }
-
-                            row.innerHTML = `
-                                <td>${log.timestamp}</td>
-                                <td><span class="badge log-${log.level.toLowerCase()}">${log.level}</span></td>
-                                <td>${log.module}</td>
-                                <td class="log-entry">${log.message}</td>
-                            `;
-                            logEntries.appendChild(row);
-                        });
-
-                        if (!append) {
-                            logCount.textContent = `${data.total} entries`;
-                        }
+                        allLogs = allLogs.concat(data.logs || []);
                     }
+                    
+                    // Implement memory management - limit total logs to prevent memory exhaustion
+                    const MAX_LOGS = 5000; // Limit to 5000 logs to prevent memory issues
+                    if (allLogs.length > MAX_LOGS) {
+                        allLogs = allLogs.slice(-MAX_LOGS); // Keep only the most recent logs
+                        console.warn(`Log limit reached. Keeping only the most recent ${MAX_LOGS} logs.`);
+                    }
+                    
+                    loadMoreBtn.disabled = (data.logs || []).length < limit;
+                    filterLogs();
                 })
                 .catch(error => {
                     console.error('Error fetching logs:', error);
-                    logEntries.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Error loading logs</td></tr>';
+                    logEntries.innerHTML = `
+                        <div class="d-flex justify-content-center align-items-center py-5">
+                            <div class="text-center">
+                                <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+                                <p class="text-danger mb-0">Error loading logs</p>
+                                <small class="text-muted">${error.message}</small>
+                            </div>
+                        </div>
+                    `;
                 });
         }
 
-        // Initial load
-        fetchLogs();
+        // Event Listeners
+        
+        // Search input
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value;
+            filterLogs();
+        });
 
-        // Set up auto-refresh (every 5 seconds)
-        autoRefreshInterval = setInterval(() => {
-            fetchLogs();
-        }, 5000);
+        // Log level select
+        logLevelSelect.addEventListener('change', (e) => {
+            currentLogLevel = e.target.value;
+            filterLogs();
+        });
+
+        // Auto-scroll toggle
+        autoScrollToggle.addEventListener('change', (e) => {
+            autoScrollEnabled = e.target.checked;
+            // Immediately scroll to top when auto-scroll is enabled
+            if (autoScrollEnabled) {
+                logViewer.scrollTop = 0;
+            }
+        });
 
         // Manual refresh button
         refreshBtn.addEventListener('click', () => {
@@ -192,13 +451,25 @@
             if (currentState === 'on') {
                 clearInterval(autoRefreshInterval);
                 toggleAutoRefreshBtn.setAttribute('data-state', 'off');
-                toggleAutoRefreshBtn.innerHTML = '<i class="bi bi-pause-circle me-1"></i> Auto-Refresh: OFF';
+                toggleAutoRefreshBtn.innerHTML = '<i class="bi bi-pause-circle me-1"></i> Auto-Refresh';
+                liveIndicator.style.display = 'none';
             } else {
                 autoRefreshInterval = setInterval(() => {
                     fetchLogs();
                 }, 5000);
                 toggleAutoRefreshBtn.setAttribute('data-state', 'on');
-                toggleAutoRefreshBtn.innerHTML = '<i class="bi bi-play-circle me-1"></i> Auto-Refresh: ON';
+                toggleAutoRefreshBtn.innerHTML = '<i class="bi bi-play-circle me-1"></i> Auto-Refresh';
+                liveIndicator.style.display = 'block';
+            }
+        });
+
+        // Clear logs button
+        clearLogsBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the log display? This will only clear the current view, not the actual log files on the server.')) {
+                // This only clears the client-side display
+                allLogs = [];
+                filteredLogs = [];
+                renderLogs();
             }
         });
 
@@ -208,20 +479,13 @@
             fetchLogs(currentOffset, true);
         });
 
-        // Log level filtering
-        logLevelFilters.forEach(filter => {
-            filter.addEventListener('click', (e) => {
-                e.preventDefault();
+        // Initialize
+        fetchLogs();
 
-                // Update active state
-                logLevelFilters.forEach(f => f.classList.remove('active'));
-                filter.classList.add('active');
-
-                // Update current log level and fetch logs
-                currentLogLevel = filter.getAttribute('data-level');
-                fetchLogs();
-            });
-        });
+        // Set up auto-refresh (every 5 seconds)
+        autoRefreshInterval = setInterval(() => {
+            fetchLogs();
+        }, 5000);
     });
 </script>
 {% endblock %}

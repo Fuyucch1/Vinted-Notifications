@@ -1,9 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_wtf.csrf import CSRFProtect
 import db, core, os, re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from logger import get_logger
 import configuration_values
+
+# Migrate database if needed
+db.migrate_db_if_needed()
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -13,8 +17,14 @@ app = Flask(__name__,
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'),
             static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'))
 
-# Secret key for session management
-app.secret_key = os.urandom(24)
+# Secret key for session management - require environment variable for security
+secret = os.environ.get('SECRET_KEY')
+if not secret:
+    raise RuntimeError("SECRET_KEY environment variable must be set before starting the web-UI")
+app.secret_key = secret
+
+# Enable CSRF protection
+csrf = CSRFProtect(app)
 
 
 @app.context_processor
@@ -31,6 +41,19 @@ def inject_version_info():
 @app.context_processor
 def inject_current_year():
     return {'current_year': datetime.now().year}
+
+
+@app.context_processor
+def inject_theme_preference():
+    params = db.get_all_parameters()
+    theme = 'dark' if params.get('dark_mode', 'false') == 'true' else 'light'
+    return {'theme': theme}
+
+
+@app.context_processor
+def inject_csrf_token():
+    from flask_wtf.csrf import generate_csrf
+    return {'csrf_token': generate_csrf()}
 
 
 @app.route('/')
@@ -50,13 +73,13 @@ def index():
         try:
             last_timestamp = db.get_last_timestamp(query[0])
             last_found_item = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        except:
+        except (TypeError, ValueError, OSError):
             last_found_item = "Never"
 
         formatted_queries.append({
-            'id': i + 1,
-            'query': query[0],
-            'display': search_text if search_text else query[0],
+            'id': query[0],  # Use actual query ID
+            'query': query[1],
+            'display': query[3] if query[3] else (search_text if search_text else query[1]),
             'last_found_item': last_found_item
         })
 
@@ -77,6 +100,12 @@ def index():
     # Get process status from the database
     telegram_running = db.get_parameter('telegram_process_running') == 'True'
     rss_running = db.get_parameter('rss_process_running') == 'True'
+    
+    # Get keep-alive status
+    import keep_alive
+    keep_alive_enabled = db.get_parameter('keep_alive_enabled') == 'True'
+    keep_alive_status = keep_alive.get_keep_alive_status() if keep_alive_enabled else None
+    keep_alive_running = keep_alive.is_keep_alive_running() if keep_alive_enabled else False
 
     # Get statistics for the dashboard
     stats = {
@@ -106,6 +135,9 @@ def index():
                            items=formatted_items,
                            telegram_running=telegram_running,
                            rss_running=rss_running,
+                           keep_alive_enabled=keep_alive_enabled,
+                           keep_alive_running=keep_alive_running,
+                           keep_alive_status=keep_alive_status,
                            stats=stats)
 
 
@@ -123,13 +155,14 @@ def queries():
         try:
             last_timestamp = db.get_last_timestamp(query[0])
             last_found_item = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        except:
+        except (TypeError, ValueError, OSError):
             last_found_item = "Never"
 
         formatted_queries.append({
-            'id': i + 1,
-            'query': query[0],
-            'display': search_text if search_text else query[1],
+            'id': query[0],  # Use actual query ID instead of index
+            'query': query[1],
+            'name': query[3],  # Add the name field
+            'display': query[3] if query[3] else (search_text if search_text else query[1]),
             'last_found_item': last_found_item
         })
 
@@ -139,8 +172,9 @@ def queries():
 @app.route('/add_query', methods=['POST'])
 def add_query():
     query = request.form.get('query')
+    name = request.form.get('name')
     if query:
-        message, is_new_query = core.process_query(query)
+        message, is_new_query = core.process_query(query, name)
         if is_new_query:
             flash(f'Query added: {query}', 'success')
         else:
@@ -173,10 +207,59 @@ def remove_all_queries():
     return redirect(url_for('queries'))
 
 
+@app.route('/update_query_name/<int:query_id>', methods=['POST'])
+def update_query_name(query_id):
+    name = request.form.get('name')
+    if db.update_query_name(query_id, name):
+        flash('Query name updated successfully', 'success')
+    else:
+        flash('Failed to update query name', 'error')
+    return redirect(url_for('queries'))
+
+
+@app.route('/export_queries', methods=['GET'])
+def export_queries():
+    """Export all queries as JSON file for download"""
+    try:
+        json_data = db.export_queries_to_json()
+        return jsonify({"success": True, "data": json_data})
+    except Exception as e:
+        logger.error(f"Error exporting queries: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/import_queries', methods=['POST'])
+def import_queries():
+    """Import queries from uploaded JSON file"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"success": False, "error": "No file provided"})
+            
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"success": False, "error": "No file selected"})
+            
+        if not file.filename.endswith('.json'):
+            return jsonify({"success": False, "error": "File must be JSON format"})
+            
+        # Read file content
+        json_data = file.read().decode('utf-8')
+        
+        # Import queries
+        success, message = db.import_queries_from_json(json_data)
+        
+        return jsonify({"success": success, "message": message})
+    except Exception as e:
+        logger.error(f"Error importing queries: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route('/items')
 def items():
     query_id = request.args.get('query', '')  # Default to empty string instead of None
     limit = int(request.args.get('limit', 50))
+    sort_by = request.args.get('sort', 'newest')  # Get sort parameter
+    search_term = request.args.get('search', '')  # Get search parameter
 
     # Get items
     query_string = None
@@ -188,11 +271,11 @@ def items():
                 query_string = q[1]
                 break
 
-    items_data = db.get_items(limit=limit, query=query_string)
+    items_data = db.get_items(limit=limit, query=query_string, sort_by=sort_by)
     formatted_items = []
 
     for item in items_data:
-        formatted_items.append({
+        item_data = {
             'title': item[1],
             'price': item[2],
             'currency': item[3],
@@ -201,7 +284,16 @@ def items():
             parse_qs(urlparse(item[5]).query).get('search_text', [None])[0] else item[5],
             'url': f'https://www.vinted.fr/items/{item[0]}',
             'photo_url': item[6]
-        })
+        }
+        
+        # Apply search filter if search term is provided
+        if search_term:
+            # Ensure both search_term and title are strings to prevent AttributeError
+            title = item_data['title'] or ''
+            if search_term.lower() in title.lower():
+                formatted_items.append(item_data)
+        else:
+            formatted_items.append(item_data)
 
     # Get queries for filter dropdown
     queries = db.get_queries()
@@ -216,7 +308,7 @@ def items():
         if query_id == str(q[0]):
             selected_query_display = display_name
         formatted_queries.append({
-            'id': i + 1,
+            'id': str(q[0]),
             'query': str(q[0]),  # Ensure query is a string
             'display': display_name
         })
@@ -226,36 +318,57 @@ def items():
                            queries=formatted_queries,
                            selected_query=query_id,
                            selected_query_display=selected_query_display,
-                           limit=limit)
+                           limit=limit,
+                           sort_by=sort_by,
+                           search_term=search_term)
 
 
 @app.route('/config')
 def config():
     params = db.get_all_parameters()
-    return render_template('config.html', params=params)
+    return render_template('config.html', params=params, dark_mode=params.get('dark_mode', 'false'))
 
 
 @app.route('/update_config', methods=['POST'])
 def update_config():
     # Update Telegram parameters
     telegram_enabled = 'telegram_enabled' in request.form
-    db.set_parameter('telegram_enabled', str(telegram_enabled))
+    db.set_parameter('telegram_enabled', str(telegram_enabled).lower())
     db.set_parameter('telegram_token', request.form.get('telegram_token', ''))
     db.set_parameter('telegram_chat_id', request.form.get('telegram_chat_id', ''))
 
     # Update RSS parameters
     rss_enabled = 'rss_enabled' in request.form
-    db.set_parameter('rss_enabled', str(rss_enabled))
+    db.set_parameter('rss_enabled', str(rss_enabled).lower())
     db.set_parameter('rss_port', request.form.get('rss_port', '8080'))
     db.set_parameter('rss_max_items', request.form.get('rss_max_items', '100'))
 
     # Update System parameters
     db.set_parameter('items_per_query', request.form.get('items_per_query', '20'))
     db.set_parameter('query_refresh_delay', request.form.get('query_refresh_delay', '60'))
+    
+    # Update UI parameters
+    dark_mode = 'dark_mode' in request.form
+    db.set_parameter('dark_mode', str(dark_mode).lower())
+
+    # Update Keep-Alive parameters
+    keep_alive_enabled = 'keep_alive_enabled' in request.form
+    db.set_parameter('keep_alive_enabled', str(keep_alive_enabled).lower())
+    keep_alive_interval = request.form.get('keep_alive_interval', '300')
+    # Validate interval range (60-3600 seconds)
+    try:
+        interval = int(keep_alive_interval)
+        if interval < 60:
+            interval = 60
+        elif interval > 3600:
+            interval = 3600
+        db.set_parameter('keep_alive_interval', str(interval))
+    except ValueError:
+        db.set_parameter('keep_alive_interval', '300')  # Default fallback
 
     # Update Proxy parameters
     check_proxies = 'check_proxies' in request.form
-    db.set_parameter('check_proxies', str(check_proxies))
+    db.set_parameter('check_proxies', str(check_proxies).lower())
     db.set_parameter('proxy_list', request.form.get('proxy_list', ''))
     db.set_parameter('proxy_list_link', request.form.get('proxy_list_link', ''))
 
@@ -265,6 +378,39 @@ def update_config():
 
     flash('Configuration updated', 'success')
     return redirect(url_for('config'))
+
+
+@app.route('/auto_save_toggle', methods=['POST'])
+def auto_save_toggle():
+    """Auto-save toggle changes via AJAX"""
+    try:
+        data = request.get_json()
+        toggle_name = data.get('toggle_name')
+        toggle_value = data.get('toggle_value')
+        
+        # Validate toggle name to prevent unauthorized parameter updates
+        allowed_toggles = ['telegram_enabled', 'rss_enabled', 'dark_mode', 'check_proxies', 'keep_alive_enabled']
+        
+        if toggle_name not in allowed_toggles:
+            return jsonify({'status': 'error', 'message': 'Invalid toggle name'}), 400
+        
+        # Convert boolean to string format expected by the database
+        if toggle_name == 'dark_mode':
+            db.set_parameter(toggle_name, str(toggle_value).lower())
+        else:
+            db.set_parameter(toggle_name, str(toggle_value))
+        
+        # Reset proxy cache if proxy settings changed
+        if toggle_name == 'check_proxies':
+            db.set_parameter('last_proxy_check_time', "1")
+            logger.info("Proxy check setting updated, cache reset")
+        
+        logger.info(f"Auto-saved toggle: {toggle_name} = {toggle_value}")
+        return jsonify({'status': 'success', 'message': 'Toggle saved automatically'})
+        
+    except Exception as e:
+        logger.error(f"Error auto-saving toggle: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to save toggle'}), 500
 
 
 @app.route('/control/<process_name>/<action>', methods=['POST'])
@@ -333,6 +479,12 @@ def process_status():
     # Get process status from the database
     telegram_running = db.get_parameter('telegram_process_running') == 'True'
     rss_running = db.get_parameter('rss_process_running') == 'True'
+    
+    # Get keep-alive status
+    import keep_alive
+    keep_alive_enabled = db.get_parameter('keep_alive_enabled') == 'True'
+    keep_alive_status = keep_alive.get_keep_alive_status() if keep_alive_enabled else None
+    keep_alive_running = keep_alive.is_keep_alive_running() if keep_alive_enabled else False
 
     return jsonify({
         'telegram': telegram_running,
