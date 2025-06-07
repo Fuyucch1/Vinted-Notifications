@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_wtf.csrf import CSRFProtect
 import db, core, os, re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
@@ -16,8 +17,14 @@ app = Flask(__name__,
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'),
             static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'))
 
-# Secret key for session management
-app.secret_key = os.urandom(24)
+# Secret key for session management - require environment variable for security
+secret = os.environ.get('SECRET_KEY')
+if not secret:
+    raise RuntimeError("SECRET_KEY environment variable must be set before starting the web-UI")
+app.secret_key = secret
+
+# Enable CSRF protection
+csrf = CSRFProtect(app)
 
 
 @app.context_processor
@@ -43,6 +50,12 @@ def inject_theme_preference():
     return {'theme': theme}
 
 
+@app.context_processor
+def inject_csrf_token():
+    from flask_wtf.csrf import generate_csrf
+    return {'csrf_token': generate_csrf()}
+
+
 @app.route('/')
 def index():
     # Get parameters
@@ -60,7 +73,7 @@ def index():
         try:
             last_timestamp = db.get_last_timestamp(query[0])
             last_found_item = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        except:
+        except (TypeError, ValueError, OSError):
             last_found_item = "Never"
 
         formatted_queries.append({
@@ -133,7 +146,7 @@ def queries():
         try:
             last_timestamp = db.get_last_timestamp(query[0])
             last_found_item = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        except:
+        except (TypeError, ValueError, OSError):
             last_found_item = "Never"
 
         formatted_queries.append({
@@ -236,6 +249,8 @@ def import_queries():
 def items():
     query_id = request.args.get('query', '')  # Default to empty string instead of None
     limit = int(request.args.get('limit', 50))
+    sort_by = request.args.get('sort', 'newest')  # Get sort parameter
+    search_term = request.args.get('search', '')  # Get search parameter
 
     # Get items
     query_string = None
@@ -247,11 +262,11 @@ def items():
                 query_string = q[1]
                 break
 
-    items_data = db.get_items(limit=limit, query=query_string)
+    items_data = db.get_items(limit=limit, query=query_string, sort_by=sort_by)
     formatted_items = []
 
     for item in items_data:
-        formatted_items.append({
+        item_data = {
             'title': item[1],
             'price': item[2],
             'currency': item[3],
@@ -260,7 +275,16 @@ def items():
             parse_qs(urlparse(item[5]).query).get('search_text', [None])[0] else item[5],
             'url': f'https://www.vinted.fr/items/{item[0]}',
             'photo_url': item[6]
-        })
+        }
+        
+        # Apply search filter if search term is provided
+        if search_term:
+            # Ensure both search_term and title are strings to prevent AttributeError
+            title = item_data['title'] or ''
+            if search_term.lower() in title.lower():
+                formatted_items.append(item_data)
+        else:
+            formatted_items.append(item_data)
 
     # Get queries for filter dropdown
     queries = db.get_queries()
@@ -275,7 +299,7 @@ def items():
         if query_id == str(q[0]):
             selected_query_display = display_name
         formatted_queries.append({
-            'id': i + 1,
+            'id': str(q[0]),
             'query': str(q[0]),  # Ensure query is a string
             'display': display_name
         })
@@ -285,7 +309,9 @@ def items():
                            queries=formatted_queries,
                            selected_query=query_id,
                            selected_query_display=selected_query_display,
-                           limit=limit)
+                           limit=limit,
+                           sort_by=sort_by,
+                           search_term=search_term)
 
 
 @app.route('/config')
@@ -328,6 +354,39 @@ def update_config():
 
     flash('Configuration updated', 'success')
     return redirect(url_for('config'))
+
+
+@app.route('/auto_save_toggle', methods=['POST'])
+def auto_save_toggle():
+    """Auto-save toggle changes via AJAX"""
+    try:
+        data = request.get_json()
+        toggle_name = data.get('toggle_name')
+        toggle_value = data.get('toggle_value')
+        
+        # Validate toggle name to prevent unauthorized parameter updates
+        allowed_toggles = ['telegram_enabled', 'rss_enabled', 'dark_mode', 'check_proxies']
+        
+        if toggle_name not in allowed_toggles:
+            return jsonify({'status': 'error', 'message': 'Invalid toggle name'}), 400
+        
+        # Convert boolean to string format expected by the database
+        if toggle_name == 'dark_mode':
+            db.set_parameter(toggle_name, str(toggle_value).lower())
+        else:
+            db.set_parameter(toggle_name, str(toggle_value))
+        
+        # Reset proxy cache if proxy settings changed
+        if toggle_name == 'check_proxies':
+            db.set_parameter('last_proxy_check_time', "1")
+            logger.info("Proxy check setting updated, cache reset")
+        
+        logger.info(f"Auto-saved toggle: {toggle_name} = {toggle_value}")
+        return jsonify({'status': 'success', 'message': 'Toggle saved automatically'})
+        
+    except Exception as e:
+        logger.error(f"Error auto-saving toggle: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to save toggle'}), 500
 
 
 @app.route('/control/<process_name>/<action>', methods=['POST'])

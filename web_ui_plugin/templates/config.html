@@ -3,238 +3,333 @@
 {% block title %}Configuration - Vinted Notifications{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Configuration</h1>
+<style>
+    .settings-header {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+        color: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .settings-section {
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .settings-section:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .section-header {
+        background: var(--bs-light);
+        border-bottom: 1px solid var(--bs-border-color);
+        padding: 1rem 1.5rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+    }
+    
+    [data-bs-theme="dark"] .section-header {
+        background: var(--bs-dark);
+    }
+    
+    .section-body {
+        padding: 1.5rem;
+    }
+    
+    .form-floating .form-control {
+        border-radius: 0.5rem;
+    }
+    
+    .input-group-text {
+        border-radius: 0.5rem 0 0 0.5rem;
+    }
+    
+    .form-control {
+        border-radius: 0.5rem;
+    }
+    
+    .btn-save {
+        border-radius: 0.5rem;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    }
+    
+    .save-section {
+        position: sticky;
+        bottom: 2rem;
+        z-index: 100;
+        background: var(--bs-body-bg);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 -0.5rem 1rem rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--bs-border-color);
+    }
+</style>
+
+<!-- Header Section -->
+<div class="settings-header text-center">
+    <div class="d-flex align-items-center justify-content-center mb-3">
+        <i class="bi bi-gear-fill me-3" style="font-size: 2rem;"></i>
+        <h1 class="h2 mb-0">Application Configuration</h1>
+    </div>
+    <p class="mb-0 opacity-75">Manage your Vinted Notifications settings and preferences</p>
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-gear me-2 text-info"></i>
-                <h5 class="card-title mb-0">Application Settings</h5>
+<form action="/update_config" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+    <!-- System Settings Section -->
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-cpu me-2 text-primary"></i>
+                <h5 class="mb-0">System Settings</h5>
             </div>
-            <div class="card-body">
-                <form action="/update_config" method="post">
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="bi bi-gear-fill me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">System Settings</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3 form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="dark_mode" name="dark_mode" value="true" {% if dark_mode == 'true' %}checked{% endif %}>
-                                                <label class="form-check-label" for="dark_mode">Dark Mode</label>
-                                                <small class="form-text text-muted d-block">Enable dark theme for the web interface</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="items_per_query" class="form-label">Items Per Query</label>
-                                                <input type="number" class="form-control" id="items_per_query"
-                                                       name="items_per_query" value="{{ params.items_per_query }}">
-                                                <small class="form-text text-muted">Maximum number of items to fetch per
-                                                    query</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="query_refresh_delay" class="form-label">Query Refresh Delay
-                                                    (seconds)</label>
-                                                <input type="number" class="form-control" id="query_refresh_delay"
-                                                       name="query_refresh_delay"
-                                                       value="{{ params.query_refresh_delay }}">
-                                                <small class="form-text text-muted">Delay between query refreshes in
-                                                    seconds</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <small class="text-muted">Core application configuration and preferences</small>
+        </div>
+        <div class="section-body">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="dark_mode" name="dark_mode" value="true" {% if dark_mode == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="dark_mode">
+                            <i class="bi bi-moon-stars me-2"></i>Dark Mode
+                        </label>
+                        <div class="form-text">Enable dark theme for the web interface</div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="bi bi-telegram me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">Telegram Bot</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <div class="form-check form-switch">
-                                            {% if params.telegram_enabled == 'True' %}
-                                            <input class="form-check-input" type="checkbox" id="telegram_enabled"
-                                                   name="telegram_enabled" checked>
-                                            {% else %}
-                                            <input class="form-check-input" type="checkbox" id="telegram_enabled"
-                                                   name="telegram_enabled">
-                                            {% endif %}
-                                            <label class="form-check-label" for="telegram_enabled">
-                                                Auto Start
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="telegram_token" class="form-label">Bot Token</label>
-                                        <input type="text" class="form-control" id="telegram_token"
-                                               name="telegram_token" value="{{ params.telegram_token }}">
-                                        <small class="form-text text-muted">Get this from BotFather</small>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="telegram_chat_id" class="form-label">Chat ID</label>
-                                        <input type="text" class="form-control" id="telegram_chat_id"
-                                               name="telegram_chat_id" value="{{ params.telegram_chat_id }}">
-                                        <small class="form-text text-muted">The chat ID where notifications will be
-                                            sent</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="bi bi-rss me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">RSS Feed</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <div class="form-check form-switch">
-                                            {% if params.rss_enabled == 'True' %}
-                                            <input class="form-check-input" type="checkbox" id="rss_enabled"
-                                                   name="rss_enabled" checked>
-                                            {% else %}
-                                            <input class="form-check-input" type="checkbox" id="rss_enabled"
-                                                   name="rss_enabled">
-                                            {% endif %}
-                                            <label class="form-check-label" for="rss_enabled">
-                                                Auto Start
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="rss_port" class="form-label">Port</label>
-                                        <input type="number" class="form-control" id="rss_port" name="rss_port"
-                                               value="{{ params.rss_port }}">
-                                        <small class="form-text text-muted">The port on which the RSS feed will be
-                                            served</small>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="rss_max_items" class="form-label">Maximum Items</label>
-                                        <input type="number" class="form-control" id="rss_max_items"
-                                               name="rss_max_items" value="{{ params.rss_max_items }}">
-                                        <small class="form-text text-muted">Maximum number of items to keep in the RSS
-                                            feed</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="items_per_query" name="items_per_query" value="{{ params.items_per_query }}" placeholder="Items Per Query">
+                        <label for="items_per_query"><i class="bi bi-list-ol me-2"></i>Items Per Query</label>
+                        <div class="form-text">Maximum number of items to fetch per query</div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="bi bi-shield-lock me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">Proxy Settings</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="mb-3">
-                                                <div class="form-check form-switch">
-                                                    {% if params.check_proxies == 'True' %}
-                                                    <input class="form-check-input" type="checkbox" id="check_proxies"
-                                                           name="check_proxies" checked>
-                                                    {% else %}
-                                                    <input class="form-check-input" type="checkbox" id="check_proxies"
-                                                           name="check_proxies">
-                                                    {% endif %}
-                                                    <label class="form-check-label" for="check_proxies">
-                                                        Check Proxies
-                                                    </label>
-                                                    <small class="form-text text-muted d-block">Verify if proxies are
-                                                        working before using them</small>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="proxy_list" class="form-label">Proxy List</label>
-                                                <textarea class="form-control" id="proxy_list" name="proxy_list"
-                                                          rows="3">{{ params.proxy_list }}</textarea>
-                                                <small class="form-text text-muted">List of proxies separated by
-                                                    semicolons (;)<br>
-                                                    Format: http://ip:port or ip:port</small>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="proxy_list_link" class="form-label">Proxy List Link</label>
-                                                <input type="text" class="form-control" id="proxy_list_link"
-                                                       name="proxy_list_link" value="{{ params.proxy_list_link }}">
-                                                <small class="form-text text-muted">URL to fetch proxies from (one proxy
-                                                    per line)</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="query_refresh_delay" name="query_refresh_delay" value="{{ params.query_refresh_delay }}" placeholder="Refresh Delay">
+                        <label for="query_refresh_delay"><i class="bi bi-clock me-2"></i>Query Refresh Delay (seconds)</label>
+                        <div class="form-text">Delay between query refreshes in seconds</div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">Save Configuration</button>
-                        </div>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-toggles me-2 text-info"></i>
-                <h5 class="card-title mb-0">Process Control</h5>
+    <!-- Telegram Settings Section -->
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-telegram me-2 text-info"></i>
+                <h5 class="mb-0">Telegram Integration</h5>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h6 class="mb-0">Telegram Bot</h6>
-                                <small class="text-muted process-status" data-process="telegram">Checking
-                                    status...</small>
-                            </div>
-                            <div>
-                                <button class="btn btn-success process-control" data-process="telegram"
-                                        data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
-                                </button>
-                                <button class="btn btn-danger process-control" data-process="telegram"
-                                        data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
-                                </button>
-                            </div>
+            <small class="text-muted">Configure Telegram bot for notifications</small>
+        </div>
+        <div class="section-body">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        {% if params.telegram_enabled == 'true' %}
+                        <input class="form-check-input" type="checkbox" id="telegram_enabled" name="telegram_enabled" checked>
+                        {% else %}
+                        <input class="form-check-input" type="checkbox" id="telegram_enabled" name="telegram_enabled">
+                        {% endif %}
+                        <label class="form-check-label" for="telegram_enabled">
+                            <i class="bi bi-power me-2"></i>Auto Start Telegram Bot
+                        </label>
+                        <div class="form-text">Automatically start the Telegram bot when the application starts</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-key"></i></span>
+                        <div class="form-floating">
+                            <input type="password" class="form-control" id="telegram_token" name="telegram_token" value="{{ params.telegram_token }}" placeholder="Bot Token">
+                            <label for="telegram_token">Bot Token</label>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h6 class="mb-0">RSS Feed</h6>
-                                <small class="text-muted process-status" data-process="rss">Checking status...</small>
-                            </div>
-                            <div>
-                                <button class="btn btn-success process-control" data-process="rss" data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
-                                </button>
-                                <button class="btn btn-danger process-control" data-process="rss" data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
-                                </button>
-                            </div>
+                    <div class="form-text">Get this token from @BotFather on Telegram</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-chat-dots"></i></span>
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="telegram_chat_id" name="telegram_chat_id" value="{{ params.telegram_chat_id }}" placeholder="Chat ID">
+                            <label for="telegram_chat_id">Chat ID</label>
                         </div>
+                    </div>
+                    <div class="form-text">The chat ID where notifications will be sent</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RSS Feed Settings Section -->
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-rss me-2 text-warning"></i>
+                <h5 class="mb-0">RSS Feed</h5>
+            </div>
+            <small class="text-muted">Configure RSS feed for external integrations</small>
+        </div>
+        <div class="section-body">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        {% if params.rss_enabled == 'true' %}
+                        <input class="form-check-input" type="checkbox" id="rss_enabled" name="rss_enabled" checked>
+                        {% else %}
+                        <input class="form-check-input" type="checkbox" id="rss_enabled" name="rss_enabled">
+                        {% endif %}
+                        <label class="form-check-label" for="rss_enabled">
+                            <i class="bi bi-power me-2"></i>Auto Start RSS Feed
+                        </label>
+                        <div class="form-text">Automatically start the RSS feed server when the application starts</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-hdd-network"></i></span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="rss_port" name="rss_port" value="{{ params.rss_port }}" placeholder="Port">
+                            <label for="rss_port">RSS Port</label>
+                        </div>
+                    </div>
+                    <div class="form-text">The port on which the RSS feed will be served</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-collection"></i></span>
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="rss_max_items" name="rss_max_items" value="{{ params.rss_max_items }}" placeholder="Max Items">
+                            <label for="rss_max_items">Maximum Items</label>
+                        </div>
+                    </div>
+                    <div class="form-text">Maximum number of items to keep in the RSS feed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proxy Settings Section -->
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-shield-lock me-2 text-success"></i>
+                <h5 class="mb-0">Proxy Settings</h5>
+            </div>
+            <small class="text-muted">Configure proxy servers for web scraping</small>
+        </div>
+        <div class="section-body">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        {% if params.check_proxies == 'true' %}
+                        <input class="form-check-input" type="checkbox" id="check_proxies" name="check_proxies" checked>
+                        {% else %}
+                        <input class="form-check-input" type="checkbox" id="check_proxies" name="check_proxies">
+                        {% endif %}
+                        <label class="form-check-label" for="check_proxies">
+                            <i class="bi bi-check-circle me-2"></i>Verify Proxy Health
+                        </label>
+                        <div class="form-text">Verify if proxies are working before using them</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label for="proxy_list" class="form-label"><i class="bi bi-list-ul me-2"></i>Proxy List</label>
+                    <textarea class="form-control" id="proxy_list" name="proxy_list" rows="4" placeholder="Enter proxies separated by semicolons...">{{ params.proxy_list }}</textarea>
+                    <div class="form-text">
+                        <strong>Format:</strong> <code>http://ip:port</code> or <code>ip:port</code><br>
+                        <strong>Separator:</strong> Use semicolons (;) to separate multiple proxies
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                        <div class="form-floating">
+                            <input type="url" class="form-control" id="proxy_list_link" name="proxy_list_link" value="{{ params.proxy_list_link }}" placeholder="Proxy List URL">
+                            <label for="proxy_list_link">Proxy List URL</label>
+                        </div>
+                    </div>
+                    <div class="form-text">URL to fetch proxies from (one proxy per line)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Section -->
+    <div class="save-section">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-1">Configuration Settings</h6>
+                <small class="text-muted">Save your changes to apply the new configuration</small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-save">
+                <i class="bi bi-save me-2"></i>Save All Settings
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Process Control Section -->
+<div class="settings-section mt-4">
+    <div class="section-header">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-toggles me-2 text-danger"></i>
+            <h5 class="mb-0">Process Control</h5>
+        </div>
+        <small class="text-muted">Start and stop application services</small>
+    </div>
+    <div class="section-body">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="d-flex justify-content-between align-items-center p-3 border rounded-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="bi bi-telegram text-info" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Telegram Bot</h6>
+                            <small class="text-muted process-status" data-process="telegram">Checking status...</small>
+                        </div>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-success process-control" data-process="telegram" data-action="start">
+                            <i class="bi bi-play-fill me-1"></i>Start
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger process-control" data-process="telegram" data-action="stop">
+                            <i class="bi bi-stop-fill me-1"></i>Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="d-flex justify-content-between align-items-center p-3 border rounded-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="bi bi-rss text-warning" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">RSS Feed</h6>
+                            <small class="text-muted process-status" data-process="rss">Checking status...</small>
+                        </div>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-success process-control" data-process="rss" data-action="start">
+                            <i class="bi bi-play-fill me-1"></i>Start
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger process-control" data-process="rss" data-action="stop">
+                            <i class="bi bi-stop-fill me-1"></i>Stop
+                        </button>
                     </div>
                 </div>
             </div>
@@ -261,7 +356,8 @@
                 fetch(`/control/${process}/${action}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
                     }
                 })
                     .then(response => response.json())
@@ -343,6 +439,73 @@
 
         // Initial check
         checkProcessStatus();
+        
+        // Auto-save functionality for toggles
+        function setupAutoSave() {
+            const toggles = document.querySelectorAll('input[type="checkbox"].form-check-input');
+            
+            toggles.forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const toggleName = this.name;
+                    const toggleValue = this.checked;
+                    
+                    // Only auto-save specific toggles
+                    const autoSaveToggles = ['telegram_enabled', 'rss_enabled', 'dark_mode', 'check_proxies'];
+                    
+                    if (autoSaveToggles.includes(toggleName)) {
+                        // Get CSRF token
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                                         document.querySelector('input[name="csrf_token"]')?.value;
+                        
+                        const headers = {
+                            'Content-Type': 'application/json',
+                        };
+                        
+                        // Add CSRF token to headers if available
+                        if (csrfToken) {
+                            headers['X-CSRFToken'] = csrfToken;
+                        }
+                        
+                        fetch('/auto_save_toggle', {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                toggle_name: toggleName,
+                                toggle_value: toggleValue
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                // If dark mode was changed, apply theme immediately
+                                if (toggleName === 'dark_mode') {
+                                    applyThemeChange(toggleValue);
+                                }
+                            } else {
+                                console.error('Auto-save error:', data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Auto-save error:', error);
+                        });
+                    }
+                });
+            });
+        }
+        
+
+        
+        function applyThemeChange(isDarkMode) {
+            const html = document.documentElement;
+            if (isDarkMode) {
+                html.setAttribute('data-bs-theme', 'dark');
+            } else {
+                html.setAttribute('data-bs-theme', 'light');
+            }
+        }
+        
+        // Initialize auto-save
+        setupAutoSave();
     });
 </script>
 {% endblock %}

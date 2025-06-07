@@ -3,143 +3,162 @@
 {% block title %}Dashboard - Vinted Notifications{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Dashboard</h1>
+<!-- Header Section -->
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Dashboard</h1>
+        <p class="text-muted mb-0">Monitor your Vinted notifications and system status</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            <span class="d-none d-sm-inline">Refresh</span>
+        </button>
+    </div>
 </div>
 
-<!-- Statistics Section -->
-<div class="row mb-4">
-    <div class="col-md-3">
+<!-- Key Metrics Section -->
+<div class="row mb-4 g-3">
+    <div class="col-6 col-lg-3">
         <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center">
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    <i class="bi bi-box-seam text-primary" style="font-size: 2rem;"></i>
+            <div class="card-body text-center p-3">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3">
+                        <i class="bi bi-box-seam text-primary" style="font-size: 1.5rem;"></i>
+                    </div>
                 </div>
-                <h5 class="card-title">Total Items</h5>
-                <h2 class="display-4 fw-bold text-primary">{{ stats.total_items }}</h2>
-                <p class="card-text text-muted">Items grabbed for monitored queries so far</p>
+                <h6 class="card-title mb-2 text-muted">Total Items</h6>
+                <h3 class="display-6 fw-bold text-primary mb-1">{{ stats.total_items }}</h3>
+                <p class="card-text text-muted small mb-0">Items grabbed so far</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-lg-3">
         <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center">
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    <i class="bi bi-search text-success" style="font-size: 2rem;"></i>
+            <div class="card-body text-center p-3">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3">
+                        <i class="bi bi-search text-success" style="font-size: 1.5rem;"></i>
+                    </div>
                 </div>
-                <h5 class="card-title">Active Queries</h5>
-                <h2 class="display-4 fw-bold text-success">{{ stats.total_queries }}</h2>
-                <p class="card-text text-muted">Queries being monitored</p>
+                <h6 class="card-title mb-2 text-muted">Active Queries</h6>
+                <h3 class="display-6 fw-bold text-success mb-1">{{ stats.total_queries }}</h3>
+                <p class="card-text text-muted small mb-0">Queries monitored</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-lg-3">
         <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center">
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    <i class="bi bi-bar-chart-fill text-warning" style="font-size: 2rem;"></i>
+            <div class="card-body text-center p-3">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3">
+                        <i class="bi bi-telegram {% if telegram_running %}text-success{% else %}text-danger{% endif %}" style="font-size: 1.5rem;"></i>
+                    </div>
                 </div>
-                <h5 class="card-title">Items per Day</h5>
-                <h2 class="display-4 fw-bold text-warning">{{ stats.items_per_day }}</h2>
-                <p class="card-text text-muted">Average items found daily</p>
+                <h6 class="card-title mb-2 text-muted">Telegram Bot</h6>
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <span class="badge {% if telegram_running %}bg-success{% else %}bg-danger{% endif %} me-2">
+                        {% if telegram_running %}ON{% else %}OFF{% endif %}
+                    </span>
+                    <small class="text-muted">{{ 'Running' if telegram_running else 'Stopped' }}</small>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-lg-3">
         <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body text-center">
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    <i class="bi bi-clock-history text-info" style="font-size: 2rem;"></i>
+            <div class="card-body text-center p-3">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3">
+                        <i class="bi bi-rss {% if rss_running %}text-success{% else %}text-danger{% endif %}" style="font-size: 1.5rem;"></i>
+                    </div>
                 </div>
-                <h5 class="card-title">Last Found Item</h5>
-                {% if stats.last_item %}
-                <div class="d-flex align-items-center justify-content-center">
-                    {% if stats.last_item.photo_url %}
-                    <img src="{{ stats.last_item.photo_url }}" alt="{{ stats.last_item.title }}"
-                         class="img-thumbnail me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                <h6 class="card-title mb-2 text-muted">RSS Feed</h6>
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <span class="badge {% if rss_running %}bg-success{% else %}bg-danger{% endif %} me-2">
+                        {% if rss_running %}ON{% else %}OFF{% endif %}
+                    </span>
+                    {% if rss_running and params.rss_port %}
+                    <small class="text-muted">
+                        <a href="http://localhost:{{ params.rss_port|e }}/" target="_blank" class="text-decoration-none">Port {{ params.rss_port|e }}</a>
+                    </small>
                     {% else %}
-                    <div class="bg-light d-flex align-items-center justify-content-center me-2"
-                         style="width: 50px; height: 50px;">
-                        <i class="bi bi-image text-muted"></i>
-                    </div>
+                    <small class="text-muted">Stopped</small>
                     {% endif %}
-                    <div class="text-start">
-                        <h6 class="mb-0 text-truncate" style="max-width: 150px;">
-                            <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
-                               class="text-decoration-none">
-                                {{ stats.last_item.title }}
-                            </a>
-                        </h6>
-                        <small class="text-muted">{{ stats.last_item.timestamp }}</small>
-                        <div class="mt-1">
-                            <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
-                               class="btn btn-sm btn-outline-info">
-                                <i class="bi bi-box-arrow-up-right"></i> View
-                            </a>
-                        </div>
-                    </div>
                 </div>
-                {% else %}
-                <p class="text-muted">No items found yet</p>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
+<!-- System Status Section -->
 <div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-speedometer2 me-2 text-info"></i>
-                <h5 class="card-title mb-0">Process Status</h5>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-gear-fill me-2 text-info"></i>
+                    <h5 class="card-title mb-0">System Control</h5>
+                </div>
+                <small class="text-muted">Manage your services</small>
             </div>
-            <div class="card-body">
-                <div class="row">
+            <div class="card-body pt-0">
+                <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h6 class="mb-0">Telegram Bot</h6>
-                                <small class="text-muted">{{ 'Running' if telegram_running else 'Stopped' }}</small>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light bg-opacity-50 rounded">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="bi bi-telegram me-2 {% if telegram_running %}text-success{% else %}text-muted{% endif %}"></i>
+                                    <h6 class="mb-0">Telegram Bot</h6>
+                                    <span class="badge {% if telegram_running %}bg-success{% else %}bg-secondary{% endif %} ms-2">
+                                        {% if telegram_running %}ACTIVE{% else %}INACTIVE{% endif %}
+                                    </span>
+                                </div>
+                                <small class="text-muted">{{ 'Monitoring for new items' if telegram_running else 'Bot is stopped' }}</small>
                             </div>
-                            <div>
+                            <div class="flex-shrink-0">
                                 {% if telegram_running %}
-                                <button class="btn btn-sm btn-danger process-control" data-process="telegram"
-                                        data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
+                                <button class="btn btn-sm btn-outline-danger process-control" data-process="telegram" data-action="stop">
+                                    <i class="bi bi-stop-fill me-1"></i>
+                                    <span class="d-none d-lg-inline">Stop</span>
                                 </button>
                                 {% else %}
-                                <button class="btn btn-sm btn-success process-control" data-process="telegram"
-                                        data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
+                                <button class="btn btn-sm btn-outline-success process-control" data-process="telegram" data-action="start">
+                                    <i class="bi bi-play-fill me-1"></i>
+                                    <span class="d-none d-lg-inline">Start</span>
                                 </button>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h6 class="mb-0">RSS Feed</h6>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light bg-opacity-50 rounded">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="bi bi-rss me-2 {% if rss_running %}text-success{% else %}text-muted{% endif %}"></i>
+                                    <h6 class="mb-0">RSS Feed</h6>
+                                    <span class="badge {% if rss_running %}bg-success{% else %}bg-secondary{% endif %} ms-2">
+                                        {% if rss_running %}ACTIVE{% else %}INACTIVE{% endif %}
+                                    </span>
+                                </div>
                                 <small class="text-muted">
                                     {% if rss_running %}
-                                    <a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{
-                                        params.rss_port }}</a>
+                                    <a href="http://localhost:{{ params.rss_port }}/" target="_blank" class="text-decoration-none">Running on port {{ params.rss_port }}</a>
                                     {% else %}
-                                    Stopped
+                                    RSS feed is stopped
                                     {% endif %}
                                 </small>
                             </div>
-                            <div>
+                            <div class="flex-shrink-0">
                                 {% if rss_running %}
-                                <button class="btn btn-sm btn-danger process-control" data-process="rss"
-                                        data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
+                                <button class="btn btn-sm btn-outline-danger process-control" data-process="rss" data-action="stop">
+                                    <i class="bi bi-stop-fill me-1"></i>
+                                    <span class="d-none d-lg-inline">Stop</span>
                                 </button>
                                 {% else %}
-                                <button class="btn btn-sm btn-success process-control" data-process="rss"
-                                        data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
+                                <button class="btn btn-sm btn-outline-success process-control" data-process="rss" data-action="start">
+                                    <i class="bi bi-play-fill me-1"></i>
+                                    <span class="d-none d-lg-inline">Start</span>
                                 </button>
                                 {% endif %}
                             </div>
@@ -151,66 +170,95 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-box me-2 text-info"></i>
-                    <h5 class="card-title mb-0">Recent Items</h5>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="btn-group me-2" role="group" aria-label="View toggle">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
-                            <i class="bi bi-grid-3x3-gap-fill"></i> Cards
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="listViewBtn">
-                            <i class="bi bi-list-ul"></i> List
-                        </button>
+<!-- Recent Activity Section -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-clock-history me-2 text-primary"></i>
+                        <h5 class="card-title mb-0">Recent Activity</h5>
+                        <span class="badge bg-primary bg-opacity-10 text-primary ms-2">{{ items|length }} items</span>
                     </div>
-                    <a href="/items" class="btn btn-sm btn-outline-primary">View All</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group" role="group" aria-label="View toggle">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
+                                <i class="bi bi-grid-3x3-gap-fill me-1"></i>
+                                <span class="d-none d-md-inline">Cards</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="listViewBtn">
+                                <i class="bi bi-list-ul me-1"></i>
+                                <span class="d-none d-md-inline">List</span>
+                            </button>
+                        </div>
+                        <a href="/items" class="btn btn-sm btn-primary">
+                            <i class="bi bi-arrow-right me-1"></i>
+                            View All
+                        </a>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
                 <!-- Card View -->
-                <div class="row" id="cardView">
+                <div class="row g-3" id="cardView">
                     {% for item in items %}
-                    <div class="col-md-4 col-lg-3 mb-3">
-                        <div class="card h-100">
-                            {% if item.photo_url %}
-                            <img src="{{ item.photo_url }}" class="card-img-top" alt="{{ item.title }}"
-                                 style="height: 150px; object-fit: cover;">
-                            {% else %}
-                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
-                                 style="height: 150px;">
-                                <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                    <div class="col-sm-6 col-lg-4 col-xl-3">
+                        <div class="card h-100 border-0 shadow-sm hover-lift">
+                            <div class="position-relative">
+                                {% if item.photo_url %}
+                                <img src="{{ item.photo_url }}" class="card-img-top" alt="{{ item.title }}"
+                                     style="height: 180px; object-fit: cover;">
+                                {% else %}
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                     style="height: 180px;">
+                                    <i class="bi bi-image text-muted" style="font-size: 2.5rem;"></i>
+                                </div>
+                                {% endif %}
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank" 
+                                       class="btn btn-sm btn-light btn-outline-primary rounded-circle" 
+                                       title="View on Vinted">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
                             </div>
-                            {% endif %}
-                            <div class="card-body p-2">
-                                <h6 class="card-title" style="height: 40px; overflow: hidden; font-size: 0.9rem;">
-                                    <strong>{{ item.title }}</strong></h6>
-                                <p class="card-text small mb-1">
-                                    Price: {{ item.price }} {{ item.currency }}<br>
-                                    Date: {{ item.timestamp }}
-                                </p>
-                            </div>
-                            <div class="card-footer bg-white p-2">
-                                <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank"
-                                   class="btn btn-sm btn-primary w-100">
-                                    <i class="bi bi-box-arrow-up-right"></i> View
-                                </a>
+                            <div class="card-body p-3">
+                                <h6 class="card-title mb-2 text-truncate" title="{{ item.title }}">
+                                    <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank" 
+                                       class="text-decoration-none text-dark">
+                                        {{ item.title }}
+                                    </a>
+                                </h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-success" style="font-size: 1.1rem;">
+                                        {{ item.price }} {{ item.currency }}
+                                    </span>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>
+                                        {{ item.timestamp.split(' ')[1] if ' ' in item.timestamp else item.timestamp }}
+                                    </small>
+                                </div>
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    {{ item.timestamp.split(' ')[0] if ' ' in item.timestamp else 'Today' }}
+                                </small>
                             </div>
                         </div>
                     </div>
                     {% else %}
-                    <div class="col-12 text-center py-5">
-                        <p class="text-muted">No items found</p>
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                            <h6 class="text-muted mt-3">No items found yet</h6>
+                            <p class="text-muted small mb-0">Items will appear here when your queries find new results</p>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
 
                 <!-- List View -->
-                <div class="table-responsive" id="listView" style="display: none;">
+                <div class="table-responsive d-none" id="listView">
                     <table class="table table-hover mb-0">
                         <thead>
                         <tr>
@@ -241,7 +289,7 @@
                             <td>
                                 <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank"
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-box-arrow-up-right"></i> View
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> View
                                 </a>
                             </td>
                         </tr>
@@ -256,44 +304,215 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-search me-2 text-info"></i>
-                    <h5 class="card-title mb-0">Queries</h5>
+    
+    <!-- Sidebar with Additional Info -->
+    <div class="col-lg-4">
+        <div class="row g-3">
+            <!-- Quick Stats -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-graph-up me-2 text-success"></i>
+                            <h6 class="card-title mb-0">Quick Stats</h6>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light bg-opacity-50 rounded">
+                                    <div class="fw-bold text-warning" style="font-size: 1.2rem;">{{ stats.items_per_day or 0 }}</div>
+                                    <small class="text-muted">Per Day</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light bg-opacity-50 rounded">
+                                    <div class="fw-bold text-info" style="font-size: 1.2rem;">{{ queries|length }}</div>
+                                    <small class="text-muted">Queries</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% if stats.last_item %}
+                        <div class="mt-3 p-3 bg-light bg-opacity-50 rounded">
+                            <div class="d-flex align-items-center">
+                                {% if stats.last_item.photo_url %}
+                                <img src="{{ stats.last_item.photo_url }}" alt="{{ stats.last_item.title }}"
+                                     class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-secondary bg-opacity-25 rounded me-3 d-flex align-items-center justify-content-center"
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-image text-muted"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 text-truncate" style="font-size: 0.875rem;">
+                                        <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
+                                           class="text-decoration-none text-dark">
+                                            {{ stats.last_item.title }}
+                                        </a>
+                                    </h6>
+                                    <small class="text-muted">Latest find</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                <a href="/queries" class="btn btn-sm btn-outline-primary">Manage</a>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Query</th>
-                            <th>Last Found Item</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for query in queries %}
-                        <tr>
-                            <td>{{ query.id }}</td>
-                            <td>{{ query.display }}</td>
-                            <td>{{ query.last_found_item }}</td>
-                        </tr>
+            
+            <!-- Active Queries -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-search me-2 text-primary"></i>
+                                <h6 class="card-title mb-0">Active Queries</h6>
+                            </div>
+                            <a href="/queries" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-gear me-1"></i>
+                                Manage
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        {% if queries %}
+                        <div class="list-group list-group-flush">
+                            {% for query in queries[:5] %}
+                            <div class="list-group-item border-0 px-0 py-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 text-truncate" style="font-size: 0.875rem;">{{ query.display }}</h6>
+                                        <small class="text-muted">ID: {{ query.id }}</small>
+                                    </div>
+                                    <span class="badge bg-success bg-opacity-10 text-success">Active</span>
+                                </div>
+                                {% if query.last_found_item %}
+                                <small class="text-muted d-block mt-1">
+                                    <i class="bi bi-clock me-1"></i>
+                                    Last: {{ query.last_found_item }}
+                                </small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% if queries|length > 5 %}
+                            <div class="text-center pt-2">
+                                <small class="text-muted">{{ queries|length - 5 }} more queries...</small>
+                            </div>
+                            {% endif %}
+                        </div>
                         {% else %}
-                        <tr>
-                            <td colspan="3" class="text-center">No queries found</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                        <div class="text-center py-3">
+                            <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                            <h6 class="text-muted mt-2">No queries yet</h6>
+                            <p class="text-muted small mb-2">Create queries to start monitoring</p>
+                            <a href="/queries" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus me-1"></i>
+                                Add Query
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    /* Modern Dashboard Styles */
+    .hover-lift {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .card {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .btn {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .list-group-item {
+        transition: background-color 0.2s ease-in-out;
+    }
+    
+    .list-group-item:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    /* Dark mode compatibility */
+    [data-bs-theme="dark"] .bg-light {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    [data-bs-theme="dark"] .list-group-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    [data-bs-theme="dark"] .card-img-top.bg-light {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .display-6 {
+            font-size: 1.5rem;
+        }
+    }
+    
+    /* Badge improvements */
+    .badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    /* Card header improvements */
+    .card-header.bg-transparent {
+        background-color: transparent !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    [data-bs-theme="dark"] .card-header.bg-transparent {
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Perfect circle icons */
+    .rounded-circle.p-3 {
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+        min-height: 80px;
+        max-width: 80px;
+        max-height: 80px;
+        padding: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50% !important;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        flex-shrink: 0;
+        box-sizing: border-box;
+    }
+    
+    .rounded-circle.p-3 i {
+        font-size: 1.5rem !important;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -309,11 +528,22 @@
                 // Disable button during request
                 this.disabled = true;
 
+                // Get CSRF token from meta tag or form
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                                 document.querySelector('input[name="csrf_token"]')?.value;
+                
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Add CSRF token to headers if available
+                if (csrfToken) {
+                    headers['X-CSRFToken'] = csrfToken;
+                }
+                
                 fetch(`/control/${process}/${action}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: headers
                 })
                     .then(response => response.json())
                     .then(data => {
@@ -346,24 +576,55 @@
                             // Update button and status based on the action
                             if (action === 'start') {
                                 // Change button to Stop
-                                this.className = 'btn btn-sm btn-danger process-control';
+                                this.className = 'btn btn-sm btn-outline-danger process-control';
                                 this.setAttribute('data-action', 'stop');
-                                this.innerHTML = '<i class="bi bi-stop-fill"></i> Stop';
+                                this.innerHTML = '<i class="bi bi-stop-fill me-1"></i> <span class="d-none d-lg-inline">Stop</span>';
 
                                 // Update status text for RSS feed with hyperlink
                                 if (process === 'rss') {
-                                    statusContainer.innerHTML = '<a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{ params.rss_port }}</a>';
+                                    // Fix XSS vulnerability: properly escape the port value
+                                    const rssPortMeta = document.querySelector('meta[name="rss-port"]');
+                                    if (rssPortMeta) {
+                                        const rssPort = parseInt(rssPortMeta.getAttribute('content'), 10);
+                                        if (!isNaN(rssPort) && rssPort > 0 && rssPort <= 65535) {
+                                            statusContainer.innerHTML = `<a href="http://localhost:${rssPort}/" target="_blank" class="text-decoration-none">Running on port ${rssPort}</a>`;
+                                        } else {
+                                            statusContainer.textContent = 'RSS feed is running (invalid port)';
+                                        }
+                                    } else {
+                                        statusContainer.textContent = 'RSS feed is running';
+                                    }
                                 } else {
-                                    statusContainer.textContent = 'Running';
+                                    statusContainer.textContent = 'Monitoring for new items';
+                                }
+                                
+                                // Update badges
+                                const processButton = this.closest(`[data-process="${process}"]`);
+                                if (processButton) {
+                                    const badges = processButton.querySelectorAll('.badge');
+                                    badges.forEach(badge => {
+                                        badge.className = 'badge bg-success';
+                                        badge.textContent = 'ON';
+                                    });
                                 }
                             } else if (action === 'stop') {
                                 // Change button to Start
-                                this.className = 'btn btn-sm btn-success process-control';
+                                this.className = 'btn btn-sm btn-outline-success process-control';
                                 this.setAttribute('data-action', 'start');
-                                this.innerHTML = '<i class="bi bi-play-fill"></i> Start';
+                                this.innerHTML = '<i class="bi bi-play-fill me-1"></i> <span class="d-none d-lg-inline">Start</span>';
 
                                 // Update status text
-                                statusContainer.textContent = 'Stopped';
+                                statusContainer.textContent = process === 'telegram' ? 'Bot is stopped' : 'RSS feed is stopped';
+                                
+                                // Update badges
+                                const processButton = this.closest(`[data-process="${process}"]`);
+                                if (processButton) {
+                                    const badges = processButton.querySelectorAll('.badge');
+                                    badges.forEach(badge => {
+                                        badge.className = 'badge bg-danger';
+                                        badge.textContent = 'OFF';
+                                    });
+                                }
                             }
                         }
 
@@ -389,14 +650,14 @@
         // Function to set active view
         function setActiveView(view) {
             if (view === 'card') {
-                cardView.style.display = 'flex';
-                listView.style.display = 'none';
+                cardView.classList.remove('d-none');
+                listView.classList.add('d-none');
                 cardViewBtn.classList.add('active');
                 listViewBtn.classList.remove('active');
                 localStorage.setItem('vintedDashboardViewPreference', 'card');
             } else {
-                cardView.style.display = 'none';
-                listView.style.display = 'block';
+                cardView.classList.add('d-none');
+                listView.classList.remove('d-none');
                 listViewBtn.classList.add('active');
                 cardViewBtn.classList.remove('active');
                 localStorage.setItem('vintedDashboardViewPreference', 'list');

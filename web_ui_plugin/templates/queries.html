@@ -3,37 +3,64 @@
 {% block title %}Queries - Vinted Notifications{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Queries</h1>
+<!-- Header Section -->
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1"><i class="bi bi-search me-2 text-primary"></i>Query Management</h1>
+        <p class="text-muted mb-0">Manage your Vinted search queries and monitor their performance</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" onclick="toggleView()">
+            <i class="bi bi-grid-3x3-gap me-1"></i>
+            <span id="viewToggleText">Table View</span>
+        </button>
+        {% if queries %}
+        <button class="btn btn-outline-success" id="exportQueriesBtn">
+            <i class="bi bi-download me-1"></i>
+            <span class="d-none d-md-inline">Export</span>
+        </button>
+        {% endif %}
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-upload me-1"></i>
+            <span class="d-none d-md-inline">Import</span>
+        </button>
+    </div>
 </div>
 
+<!-- Add New Query Section -->
 <div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-plus-circle me-2 text-info"></i>
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+                <i class="bi bi-plus-circle me-2"></i>
                 <h5 class="card-title mb-0">Add New Query</h5>
             </div>
             <div class="card-body">
                 <form action="/add_query" method="post">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label for="query">Vinted URL or Search Query</label>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <label for="query" class="form-label fw-semibold">Vinted URL or Search Query</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
                                 <input type="text" class="form-control" id="query" name="query"
                                        placeholder="https://www.vinted.fr/catalog?search_text=nike+dunk" required>
-                                <small class="form-text text-muted">Enter a Vinted search URL or a search term</small>
                             </div>
+                            <small class="form-text text-muted">Enter a Vinted search URL or a search term</small>
                         </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="name">Query Name (Optional)</label>
+                        <div class="col-lg-3">
+                            <label for="name" class="form-label fw-semibold">Query Name (Optional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-tag"></i></span>
                                 <input type="text" class="form-control" id="name" name="name"
                                        placeholder="My Search">
                             </div>
                         </div>
-                        <div class="col-md-2 d-flex align-items-center">
-                            <button type="submit" class="btn btn-primary w-100">Add Query</button>
+                        <div class="col-lg-3">
+                            <label class="form-label fw-semibold">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-lg me-1"></i>Add Query
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -42,138 +69,251 @@
     </div>
 </div>
 
+<!-- Search and Filter Section -->
+{% if queries %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body py-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchQueries" placeholder="Search queries...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="statusFilter">
+                            <option value="all">All Queries</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <span class="badge bg-primary fs-6" id="queryCount">{{ queries|length }} queries</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Queries List Section -->
 <div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-search me-2 text-info"></i>
-                <h5 class="card-title mb-0">Current Queries</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Query</th>
-                            <th>Last Found Item</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for query in queries %}
-                        <tr>
-                            <td>{{ query.id }}</td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <span id="query-display-{{ query.id }}">{{ query.display }}</span>
-                                    <button type="button" class="btn btn-sm btn-link ms-2" onclick="showEditNameForm('{{ query.id }}')">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                    <form id="edit-name-form-{{ query.id }}" action="/update_query_name/{{ query.id }}" method="post" class="d-none ms-2">
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control form-control-sm" name="name" value="{{ query.name or '' }}" placeholder="Enter name">
-                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                                            <button type="button" class="btn btn-sm btn-secondary" onclick="hideEditNameForm('{{ query.id }}');">Cancel</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </td>
-                            <td>{{ query.last_found_item }}</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="/items?query={{ query.query|urlencode }}"
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-box"></i> View Items
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
-                                            data-bs-target="#deleteModal{{ query.id }}">
-                                        <i class="bi bi-trash"></i> Remove
-                                    </button>
-                                </div>
-
-                                <!-- Delete Modal -->
-                                <div class="modal fade" id="deleteModal{{ query.id }}" tabindex="-1"
-                                     aria-labelledby="deleteModalLabel{{ query.id }}" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="deleteModalLabel{{ query.id }}">Confirm
-                                                    Deletion</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                        aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                Are you sure you want to remove the query: <strong>{{ query.display
-                                                }}</strong>?
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                    Cancel
-                                                </button>
-                                                <form action="/remove_query/{{ query.id }}" method="post"
-                                                      class="d-inline">
-                                                    <button type="submit" class="btn btn-danger">Remove</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center">No queries found</td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% if queries %}
-            <div class="card-footer d-flex justify-content-between">
-                <div>
-                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
-                        <i class="bi bi-trash"></i> Remove All Queries
-                    </button>
-                </div>
-                <div>
-                    <button id="exportQueriesBtn" class="btn btn-success me-2">
-                        <i class="bi bi-download"></i> Export Queries
-                    </button>
-                    <button id="importQueriesBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
-                        <i class="bi bi-upload"></i> Import Queries
-                    </button>
-                </div>
-
-                <!-- Delete All Modal -->
-                <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel"
-                     aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="deleteAllModalLabel">Confirm Deletion</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
+    <div class="col-12">
+        {% if queries %}
+        <!-- Card View (Default) -->
+        <div id="cardView" class="row g-4">
+            {% for query in queries %}
+            <div class="col-lg-6 col-xl-4 query-item" data-query-text="{{ query.display|lower }}">
+                <div class="card h-100 border-0 shadow-sm query-card">
+                    <div class="card-header bg-light border-0 d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-primary me-2">#{{ query.id }}</span>
+                                <span class="badge bg-success">Active</span>
                             </div>
-                            <div class="modal-body">
-                                Are you sure you want to remove <strong>ALL</strong> queries? This action cannot be
-                                undone.
+                            <div id="query-display-card-{{ query.id }}" class="fw-semibold text-truncate" title="{{ query.display }}">
+                                {{ query.display }}
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form action="/remove_query/all" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-danger">Remove All</button>
-                                </form>
-                            </div>
+                            <form id="edit-name-form-{{ query.id }}" action="/update_query_name/{{ query.id }}" method="post" class="d-none mt-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" name="name" value="{{ query.name or '' }}" placeholder="Enter name">
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                    <button type="button" class="btn btn-secondary" onclick="hideEditNameForm('{{ query.id }}');">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="showEditNameForm('{{ query.id }}')" title="Edit name">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Last Found Item</small>
+                            <span class="text-dark">{{ query.last_found_item or 'No items found yet' }}</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pt-0">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="/items?query={{ query.query|urlencode }}" class="btn btn-sm btn-primary flex-fill">
+                                <i class="bi bi-box me-1"></i>
+                                <span class="d-none d-sm-inline">View Items</span>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ query.id }}" title="Remove query">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
+
+             {% endfor %}
+         </div>
+
+         <!-- Table View (Alternative) -->
+         <div id="tableView" class="d-none">
+             <div class="card border-0 shadow-sm">
+                 <div class="card-header bg-light border-0">
+                     <h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Queries Table</h5>
+                 </div>
+                 <div class="card-body p-0">
+                     <div class="table-responsive">
+                         <table class="table table-hover mb-0">
+                             <thead class="table-light">
+                             <tr>
+                                 <th width="10%">#</th>
+                                 <th width="40%">Query</th>
+                                 <th width="25%">Last Found Item</th>
+                                 <th width="25%">Actions</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             {% for query in queries %}
+                             <tr class="query-item" data-query-text="{{ query.display|lower }}">
+                                 <td>
+                                     <span class="badge bg-primary">#{{ query.id }}</span>
+                                 </td>
+                                 <td>
+                                     <div class="d-flex align-items-center">
+                                         <div class="flex-grow-1">
+                                             <div id="query-display-table-{{ query.id }}" class="fw-semibold">{{ query.display }}</div>
+                                             <span class="badge bg-success mt-1">Active</span>
+                                         </div>
+                                         <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="showEditNameForm('{{ query.id }}')" title="Edit name">
+                                             <i class="bi bi-pencil"></i>
+                                         </button>
+                                         <form id="edit-name-form-table-{{ query.id }}" action="/update_query_name/{{ query.id }}" method="post" class="d-none ms-2">
+                                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                             <div class="input-group input-group-sm">
+                                                 <input type="text" class="form-control" name="name" value="{{ query.name or '' }}" placeholder="Enter name">
+                                                 <button type="submit" class="btn btn-primary">Save</button>
+                                                 <button type="button" class="btn btn-secondary" onclick="hideEditNameForm('{{ query.id }}');">Cancel</button>
+                                             </div>
+                                         </form>
+                                     </div>
+                                 </td>
+                                 <td>{{ query.last_found_item or 'No items found yet' }}</td>
+                                 <td>
+                                     <div class="d-flex gap-1">
+                                         <a href="/items?query={{ query.query|urlencode }}" class="btn btn-sm btn-primary" title="View items">
+                                             <i class="bi bi-box"></i>
+                                         </a>
+                                         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ query.id }}" title="Remove query">
+                                             <i class="bi bi-trash"></i>
+                                         </button>
+                                     </div>
+                                 </td>
+                             </tr>
+                             {% endfor %}
+                             </tbody>
+                         </table>
+                     </div>
+                 </div>
+             </div>
+         </div>
+
+         <!-- Bulk Actions Footer -->
+         <div class="card border-0 shadow-sm mt-4">
+             <div class="card-body">
+                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                     <div>
+                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                             <i class="bi bi-trash me-1"></i>
+                             <span class="d-none d-md-inline">Remove All Queries</span>
+                             <span class="d-md-none">Remove All</span>
+                         </button>
+                     </div>
+                     <div class="text-muted small">
+                         Total: {{ queries|length }} queries
+                     </div>
+                 </div>
+             </div>
+         </div>
+
+         {% else %}
+         <!-- Empty State -->
+         <div class="text-center py-5">
+             <div class="card border-0 shadow-sm">
+                 <div class="card-body py-5">
+                     <i class="bi bi-search display-1 text-muted mb-3"></i>
+                     <h3 class="text-muted mb-3">No Queries Found</h3>
+                     <p class="text-muted mb-4">Get started by adding your first Vinted search query above.</p>
+                     <button class="btn btn-primary" onclick="document.getElementById('query').focus()">
+                         <i class="bi bi-plus-lg me-1"></i>Add Your First Query
+                     </button>
+                 </div>
+             </div>
+         </div>
+         {% endif %}
+     </div>
+</div>
+
+<!-- Delete Modals -->
+{% for query in queries %}
+<div class="modal fade" id="deleteModal{{ query.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ query.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel{{ query.id }}">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove this query?</p>
+                <div class="alert alert-warning">
+                    <strong>{{ query.display }}</strong>
+                </div>
+                <p class="text-muted small mb-0">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="/remove_query/{{ query.id }}" method="post" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Remove Query
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
+{% endfor %}
+
+<!-- Delete All Modal -->
+{% if queries %}
+<div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAllModalLabel">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Bulk Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading">Warning!</h6>
+                    <p class="mb-0">You are about to remove <strong>ALL {{ queries|length }} queries</strong>. This action cannot be undone.</p>
+                </div>
+                <p class="text-muted">All your search queries and their associated data will be permanently deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="/remove_query/all" method="post" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Remove All Queries
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Import Modal -->
 <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
@@ -185,6 +325,7 @@
             </div>
             <div class="modal-body">
                 <form id="importForm" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
                     <div class="mb-3">
                         <label for="importFile" class="form-label">Select JSON File</label>
                         <input class="form-control" type="file" id="importFile" name="file" accept=".json">
@@ -201,19 +342,184 @@
     </div>
 </div>
 
+{% block styles %}
+<style>
+.query-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.query-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.query-item {
+    transition: opacity 0.3s ease;
+}
+
+.query-item.filtered-out {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .query-card .card-footer .btn {
+        font-size: 0.875rem;
+    }
+    
+    .d-none.d-md-inline {
+        display: none !important;
+    }
+}
+
+/* Dark mode compatibility */
+[data-bs-theme="dark"] .query-card {
+    background-color: var(--bs-dark);
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme="dark"] .query-card:hover {
+    background-color: var(--bs-gray-800);
+}
+
+[data-bs-theme="dark"] .card-header.bg-light {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700);
+}
+</style>
+{% endblock %}
+
 <script>
+// Global variables
+let currentView = 'card';
+let allQueries = [];
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Store all query items for filtering
+    allQueries = Array.from(document.querySelectorAll('.query-item'));
+    
+    // Load saved view preference
+    const savedView = localStorage.getItem('queriesView') || 'card';
+    if (savedView === 'table') {
+        toggleView();
+    }
+    
+    // Initialize search and filter functionality
+    initializeSearchAndFilter();
+    
+    // Initialize export functionality if button exists
+    const exportBtn = document.getElementById('exportQueriesBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportQueries);
+    }
+    
+    // Initialize import functionality
+    const importBtn = document.getElementById('importSubmitBtn');
+    if (importBtn) {
+        importBtn.addEventListener('click', importQueries);
+    }
+});
+
+// View toggle functionality
+function toggleView() {
+    const cardView = document.getElementById('cardView');
+    const tableView = document.getElementById('tableView');
+    const toggleText = document.getElementById('viewToggleText');
+    
+    if (currentView === 'card') {
+        cardView.classList.add('d-none');
+        tableView.classList.remove('d-none');
+        toggleText.textContent = 'Card View';
+        currentView = 'table';
+    } else {
+        tableView.classList.add('d-none');
+        cardView.classList.remove('d-none');
+        toggleText.textContent = 'Table View';
+        currentView = 'card';
+    }
+    
+    // Save preference
+    localStorage.setItem('queriesView', currentView);
+}
+
+// Search and filter functionality
+function initializeSearchAndFilter() {
+    const searchInput = document.getElementById('searchQueries');
+    const statusFilter = document.getElementById('statusFilter');
+    const queryCount = document.getElementById('queryCount');
+    
+    if (!searchInput || !statusFilter) return;
+    
+    function filterQueries() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        let visibleCount = 0;
+        
+        allQueries.forEach(item => {
+            const queryText = item.getAttribute('data-query-text') || '';
+            const matchesSearch = queryText.includes(searchTerm);
+            
+            // Check if query is active based on presence of 'Active' badge
+            const isActive = item.querySelector('.badge.bg-success') !== null;
+            let matchesStatus = true;
+            
+            if (statusValue === 'active') {
+                matchesStatus = isActive;
+            } else if (statusValue === 'inactive') {
+                matchesStatus = !isActive;
+            }
+            
+            if (matchesSearch && matchesStatus) {
+                item.classList.remove('filtered-out');
+                visibleCount++;
+            } else {
+                item.classList.add('filtered-out');
+            }
+        });
+        
+        // Update count
+        if (queryCount) {
+            queryCount.textContent = `${visibleCount} queries`;
+        }
+    }
+    
+    // Add event listeners
+    searchInput.addEventListener('input', filterQueries);
+    statusFilter.addEventListener('change', filterQueries);
+}
+
+// Edit name functionality
 function showEditNameForm(queryId) {
-    document.getElementById(`query-display-${queryId}`).classList.add('d-none');
-    document.getElementById(`edit-name-form-${queryId}`).classList.remove('d-none');
+    const displayElements = document.querySelectorAll(
+  `#query-display-card-${queryId}, #query-display-table-${queryId}`
+);
+    const cardFormElements = document.querySelectorAll(`#edit-name-form-${queryId}`);
+    const tableFormElements = document.querySelectorAll(`#edit-name-form-table-${queryId}`);
+    
+    displayElements.forEach(el => el.classList.add('d-none'));
+    cardFormElements.forEach(el => el.classList.remove('d-none'));
+    tableFormElements.forEach(el => el.classList.remove('d-none'));
 }
 
 function hideEditNameForm(queryId) {
-    document.getElementById(`query-display-${queryId}`).classList.remove('d-none');
-    document.getElementById(`edit-name-form-${queryId}`).classList.add('d-none');
+    const displayElements = document.querySelectorAll(
+  `#query-display-card-${queryId}, #query-display-table-${queryId}`
+);
+    const cardFormElements = document.querySelectorAll(`#edit-name-form-${queryId}`);
+    const tableFormElements = document.querySelectorAll(`#edit-name-form-table-${queryId}`);
+    
+    displayElements.forEach(el => el.classList.remove('d-none'));
+    cardFormElements.forEach(el => el.classList.add('d-none'));
+    tableFormElements.forEach(el => el.classList.add('d-none'));
 }
 
 // Export queries functionality
-document.getElementById('exportQueriesBtn').addEventListener('click', function() {
+function exportQueries() {
     fetch('/export_queries')
         .then(response => response.json())
         .then(data => {
@@ -228,18 +534,21 @@ document.getElementById('exportQueriesBtn').addEventListener('click', function()
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+                
+                // Show success message
+                showToast('Queries exported successfully!', 'success');
             } else {
-                alert('Error exporting queries: ' + data.error);
+                showToast('Error exporting queries: ' + data.error, 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error exporting queries. Please try again.');
+            showToast('Error exporting queries. Please try again.', 'error');
         });
-});
+}
 
 // Import queries functionality
-document.getElementById('importSubmitBtn').addEventListener('click', function() {
+function importQueries() {
     const fileInput = document.getElementById('importFile');
     const statusDiv = document.getElementById('importStatus');
     
@@ -255,11 +564,30 @@ document.getElementById('importSubmitBtn').addEventListener('click', function() 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     
-    fetch('/import_queries', {
+    // Get CSRF token from meta tag or form
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                     document.querySelector('input[name="csrf_token"]')?.value;
+    
+    const fetchOptions = {
         method: 'POST',
-        body: formData
+        body: formData,
+        credentials: 'same-origin'
+    };
+    
+    // Add CSRF token to headers if available
+    if (csrfToken) {
+        fetchOptions.headers = {
+            'X-CSRFToken': csrfToken
+        };
+    }
+    
+    fetch('/import_queries', fetchOptions)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
     })
-    .then(response => response.json())
     .then(data => {
         statusDiv.className = data.success ? 'alert alert-success' : 'alert alert-danger';
         statusDiv.textContent = data.message || data.error;
@@ -276,6 +604,35 @@ document.getElementById('importSubmitBtn').addEventListener('click', function() 
         statusDiv.className = 'alert alert-danger';
         statusDiv.textContent = 'Error importing queries. Please try again.';
     });
-});
+}
+
+// Toast notification helper
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    
+    // Create message element safely
+    const messageElement = document.createElement('span');
+    messageElement.textContent = message;
+    
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'alert');
+    
+    toast.appendChild(messageElement);
+    toast.appendChild(closeButton);
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %}

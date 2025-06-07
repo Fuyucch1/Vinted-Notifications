@@ -1,4 +1,4 @@
-import db, configuration_values, requests
+import db, configuration_values, time, datetime, json, re, queue, requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
@@ -94,12 +94,16 @@ def process_remove_query(number):
         db.remove_all_queries_from_db()
         return "All queries removed.", True
 
-    # Check if number is a valid digit
-    if not number[0].isdigit():
-        return "Invalid number.", False
+    # Check if number is a valid positive integer
+    try:
+        query_num = int(number)
+        if query_num <= 0:
+            return "Invalid number. Must be a positive integer.", False
+    except ValueError:
+        return "Invalid number. Must be a positive integer.", False
 
     # Remove the query from the database
-    db.remove_query_from_db(number)
+    db.remove_query_from_db(query_num)
     return "Query removed.", True
 
 
@@ -223,8 +227,8 @@ def clear_item_queue(items_queue, new_items_queue):
     Process items from the items_queue.
     This function is scheduled to run frequently.
     """
-    if not items_queue.empty():
-        data, query_id = items_queue.get()
+    try:
+        data, query_id = items_queue.get_nowait()
         for item in reversed(data):
 
             # If already in db, pass
@@ -234,7 +238,7 @@ def clear_item_queue(items_queue, new_items_queue):
 
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we just update the timestamp
-            elif db.get_allowlist() != 0 and (get_user_country(item.raw_data["user"]["id"])) not in (
+            elif db.get_allowlist() and (get_user_country(item.raw_data["user"]["id"])) not in (
                     db.get_allowlist() + ["XX"]):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
@@ -252,6 +256,9 @@ def clear_item_queue(items_queue, new_items_queue):
                 # Add the item to the db
                 db.add_item_to_db(id=item.id, timestamp=item.raw_timestamp, price=item.price, title=item.title,
                                   photo_url=item.photo, query_id=query_id, currency=item.currency)
+    except queue.Empty:
+        # Queue is empty, nothing to process
+        pass
 
 
 def check_version():

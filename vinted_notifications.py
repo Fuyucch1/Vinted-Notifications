@@ -1,4 +1,4 @@
-import multiprocessing, time, core, os, db, configuration_values, sqlite3
+import multiprocessing, signal, time, db, core, configuration_values, queue, os, sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
 from rss_feed_plugin.rss_feed import rss_feed_process
@@ -15,6 +15,15 @@ current_query_refresh_delay = None
 
 def scraper_process(items_queue):
     logger.info("Scrape process started")
+    
+    # Set up SIGTERM handler for graceful shutdown
+    def sigterm_handler(signum, frame):
+        # Avoid logging during shutdown to prevent reentrant call errors
+        # Use a more graceful exit that doesn't interfere with logging shutdown
+        import os
+        os._exit(0)
+    
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Declare the global variable first
     global current_query_refresh_delay
@@ -29,28 +38,69 @@ def scraper_process(items_queue):
     scraper_scheduler.add_job(core.process_items, 'interval', seconds=current_query_refresh_delay, args=[items_queue],
                               name="scraper")
     scraper_scheduler.start()
+    
     try:
         # Keep the process running
         while True:
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
-        scraper_scheduler.shutdown()
+        logger.info("Received shutdown signal, initiating graceful shutdown...")
+    except Exception as e:
+        logger.error(f"Unexpected error in scraper process: {e}", exc_info=True)
+    finally:
+        # Ensure scheduler is properly shut down
+        try:
+            # Avoid logging during scheduler shutdown to prevent reentrant call errors
+            scraper_scheduler.shutdown(wait=True)  # Wait for jobs to complete
+        except Exception as shutdown_error:
+            # Silently handle shutdown errors to avoid logging conflicts
+            pass
+        
         logger.info("Scrape process stopped")
 
 
 def item_extractor(items_queue, new_items_queue):
     logger.info("Item extractor process started")
+    
+    # Set up SIGTERM handler for graceful shutdown
+    def sigterm_handler(signum, frame):
+        # Avoid logging during shutdown to prevent reentrant call errors
+        # Use a more graceful exit that doesn't interfere with logging shutdown
+        import os
+        os._exit(0)
+    
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    
     try:
         while True:
             # Check if there's an item in the queue
             core.clear_item_queue(items_queue, new_items_queue)
             time.sleep(0.1)  # Small sleep to prevent high CPU usage
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Consumer process stopped")
+        logger.info("Received shutdown signal, processing remaining items...")
+        # Clear remaining items if any
+        try:
+            core.clear_item_queue(items_queue, new_items_queue)
+        except Exception as cleanup_error:
+            logger.error(f"Error processing remaining items during shutdown: {cleanup_error}")
+        logger.info("Item extractor process stopped")
+    except Exception as e:
+        logger.error(f"Unexpected error in item extractor: {e}", exc_info=True)
+        logger.info("Item extractor process stopped due to error")
 
 
 def dispatcher_function(input_queue, rss_queue, telegram_queue):
     logger.info("Dispatcher process started")
+    
+    # Set up SIGTERM handler for graceful shutdown
+    def sigterm_handler(signum, frame):
+        # Avoid logging during shutdown to prevent reentrant call errors
+        # Use a more graceful exit that doesn't interfere with logging shutdown
+        import os
+        os._exit(0)
+    
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    
     try:
         while True:
             # Get from input queue
@@ -84,7 +134,6 @@ def check_refresh_delay(items_queue):
     global scrape_process, current_query_refresh_delay
 
     # Check if the scheduler is running
-
     if scrape_process is None or not scrape_process.is_alive():
         return
 
@@ -101,9 +150,44 @@ def check_refresh_delay(items_queue):
             # Update the global variable
             current_query_refresh_delay = new_delay
 
-            # Remove the existing job and add a new one with the updated interval
-            scrape_process.terminate()
-            scrape_process.join()
+            # Graceful shutdown with timeout to prevent hanging
+            logger.info("Initiating graceful shutdown of scraper process...")
+            
+            # Send termination signal - use SIGTERM on POSIX, terminate on Windows
+            import os
+            if hasattr(os, 'kill') and hasattr(scrape_process, 'pid'):
+                # POSIX systems - send SIGTERM first for graceful shutdown
+                try:
+                    os.kill(scrape_process.pid, signal.SIGTERM)
+                    logger.info("Sent SIGTERM to scraper process")
+                except (OSError, AttributeError):
+                    # Fallback to terminate if SIGTERM fails
+                    scrape_process.terminate()
+            else:
+                # Windows or other platforms
+                scrape_process.terminate()
+            
+            # Wait for graceful shutdown with timeout
+            try:
+                scrape_process.join(timeout=10)  # 10 second timeout
+                if scrape_process.is_alive():
+                    logger.warning("Scraper process did not terminate gracefully, forcing shutdown")
+                    scrape_process.kill()  # Force kill if still alive
+                    scrape_process.join()  # Wait for forced termination
+            except Exception as join_error:
+                logger.error(f"Error during process shutdown: {join_error}")
+                # Force kill as last resort
+                try:
+                    scrape_process.kill()
+                    scrape_process.join()
+                except Exception:
+                    pass
+            
+            # Small delay to ensure cleanup
+            time.sleep(0.5)
+            
+            # Start new process
+            logger.info("Starting new scraper process with updated delay")
             scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
             scrape_process.start()
 

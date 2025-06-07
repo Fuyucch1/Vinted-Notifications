@@ -22,6 +22,14 @@
     --transition-speed: 0.3s;
     --border-radius: 0.5rem;
     --purple-color: #8A2BE2; /* Keep the purple color for gradient */
+    
+    /* Responsive breakpoints */
+    --breakpoint-xs: 0;
+    --breakpoint-sm: 576px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 992px;
+    --breakpoint-xl: 1200px;
+    --breakpoint-xxl: 1400px;
 }
 
 /* Dark theme variables */
@@ -386,21 +394,312 @@ main {
     border: 1px solid var(--border-color);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* Comprehensive Responsive Design */
+
+/* Extra Small Devices (phones, less than 576px) */
+@media (max-width: 575.98px) {
+    .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
     .card {
         margin-bottom: 1rem;
+        border-radius: 0.75rem;
     }
-
+    
+    .card-body {
+        padding: 1rem 0.75rem;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+    
     .btn {
         margin-bottom: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        min-height: 44px; /* Touch-friendly */
     }
-
+    
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8rem;
+        min-height: 36px;
+    }
+    
+    .table-responsive {
+        font-size: 0.8rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table-responsive th,
+    .table-responsive td {
+        padding: 0.5rem 0.25rem;
+        white-space: nowrap;
+    }
+    
+    .display-4 {
+        font-size: 2rem !important;
+    }
+    
+    .h2 {
+        font-size: 1.5rem;
+    }
+    
+    /* Grid adjustments for mobile */
+    .row > [class*="col-"] {
+        margin-bottom: 1rem;
+    }
+    
+    .row > [class*="col-"]:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Form improvements */
+    .form-control {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 0.75rem;
+    }
+    
+    .form-select {
+        font-size: 16px;
+        padding: 0.75rem;
+    }
+    
+    /* Modal improvements */
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-content {
+        border-radius: 1rem;
+    }
+    
+    /* Alert improvements */
+    .alert {
+        border-radius: 0.75rem;
+        padding: 1rem;
+    }
+    
+    /* Image responsiveness */
+    .img-thumbnail {
+        max-width: 60px;
+        max-height: 60px;
+    }
+    
     .app-header .version-info {
         display: none !important;
     }
 
     .navbar-brand {
         font-size: 1.1rem;
+    }
+    
+    /* Process status section improvements */
+    .process-control {
+        min-width: 60px;
+    }
+    
+    /* Recent items header improvements */
+    .card-header .d-flex {
+        flex-wrap: nowrap;
+    }
+    
+    .card-header .btn-group {
+        flex-shrink: 0;
+    }
+    
+    .card-header .gap-2 {
+        gap: 0.5rem !important;
+        flex-shrink: 0;
+    }
+    
+    .card-header h5 {
+        white-space: nowrap;
+    }
+}
+
+/* Small Devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .card {
+        margin-bottom: 1.25rem;
+    }
+    
+    .btn {
+        margin-bottom: 0.75rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .display-4 {
+        font-size: 2.25rem !important;
+    }
+}
+
+/* Medium Devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+}
+
+/* Large Devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    .container-fluid {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .btn-sm {
+        min-height: 36px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .nav-link {
+        padding: 0.75rem 1rem;
+        margin: 0.25rem 0;
+    }
+    
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Increase tap targets */
+    .table-responsive a,
+    .table-responsive button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .img-thumbnail {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Landscape Orientation Adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .sidebar-sticky {
+        max-height: calc(100vh - 60px);
+        overflow-y: auto;
+    }
+    
+    .nav-link {
+        padding: 0.5rem 1rem;
+        margin: 0.1rem 0;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .sidebar,
+    .navbar,
+    .footer,
+    .btn,
+    .flash-messages {
+        display: none !important;
+    }
+    
+    main {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    
+    .table {
+        border-collapse: collapse !important;
+    }
+    
+    .table th,
+    .table td {
+        border: 1px solid #000 !important;
+    }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus Improvements for Keyboard Navigation */
+.btn:focus,
+.nav-link:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0.2rem rgba(9, 177, 186, 0.25);
+}
+
+/* Skip to main content link for accessibility */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 0 0 4px 4px;
+    z-index: 1000;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Improved contrast for better readability */
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid var(--border-color);
+    }
+    
+    .btn {
+        border-width: 2px;
+    }
+    
+    .nav-link.active {
+        border: 2px solid var(--primary-color);
     }
 }
