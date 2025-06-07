@@ -333,13 +333,13 @@ def config():
 def update_config():
     # Update Telegram parameters
     telegram_enabled = 'telegram_enabled' in request.form
-    db.set_parameter('telegram_enabled', str(telegram_enabled))
+    db.set_parameter('telegram_enabled', str(telegram_enabled).lower())
     db.set_parameter('telegram_token', request.form.get('telegram_token', ''))
     db.set_parameter('telegram_chat_id', request.form.get('telegram_chat_id', ''))
 
     # Update RSS parameters
     rss_enabled = 'rss_enabled' in request.form
-    db.set_parameter('rss_enabled', str(rss_enabled))
+    db.set_parameter('rss_enabled', str(rss_enabled).lower())
     db.set_parameter('rss_port', request.form.get('rss_port', '8080'))
     db.set_parameter('rss_max_items', request.form.get('rss_max_items', '100'))
 
@@ -353,7 +353,7 @@ def update_config():
 
     # Update Keep-Alive parameters
     keep_alive_enabled = 'keep_alive_enabled' in request.form
-    db.set_parameter('keep_alive_enabled', str(keep_alive_enabled))
+    db.set_parameter('keep_alive_enabled', str(keep_alive_enabled).lower())
     keep_alive_interval = request.form.get('keep_alive_interval', '300')
     # Validate interval range (60-3600 seconds)
     try:
@@ -368,7 +368,7 @@ def update_config():
 
     # Update Proxy parameters
     check_proxies = 'check_proxies' in request.form
-    db.set_parameter('check_proxies', str(check_proxies))
+    db.set_parameter('check_proxies', str(check_proxies).lower())
     db.set_parameter('proxy_list', request.form.get('proxy_list', ''))
     db.set_parameter('proxy_list_link', request.form.get('proxy_list_link', ''))
 

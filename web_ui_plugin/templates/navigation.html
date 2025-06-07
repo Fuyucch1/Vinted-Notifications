@@ -53,29 +53,7 @@
         </ul>
     </div>
 
-    <!-- Sidebar Footer -->
-    <div class="sidebar-footer border-top p-3">
-        <div class="d-flex flex-column gap-2">
-            <!-- Dark Mode Toggle -->
-            <div class="d-flex align-items-center justify-content-between">
-                <span class="nav-text small text-muted">Dark Mode</span>
-                <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" id="darkModeToggle" name="darkModeToggle" data-bs-toggle="tooltip" data-bs-placement="right" title="Toggle Dark Mode">
-                </div>
-            </div>
-            
-            <!-- GitHub Link -->
-            <a href="{{ github_url|e if github_url and github_url.startswith(('http://', 'https://')) else '#' }}" target="_blank" class="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-placement="right" title="View on GitHub">
-                <i class="bi bi-github nav-icon me-2"></i>
-                <span class="nav-text">GitHub</span>
-            </a>
-            
-            <!-- Version Info -->
-            <div class="text-center">
-                <small class="nav-text text-muted">v{{ current_version if current_version else '1.0.0' }}</small>
-            </div>
-        </div>
-    </div>
+
 </nav>
 
 <!-- Mobile Bottom Tab Bar (sm screens only) -->
