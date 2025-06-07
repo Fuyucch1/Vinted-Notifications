@@ -91,6 +91,65 @@
     </div>
 </div>
 
+<!-- Keep-Alive Status Section -->
+{% if keep_alive_enabled %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-heart-pulse me-2 {% if keep_alive_running %}text-success{% else %}text-danger{% endif %}"></i>
+                    <h6 class="mb-0">Keep-Alive Service</h6>
+                </div>
+                <span class="badge {% if keep_alive_running %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if keep_alive_running %}ACTIVE{% else %}INACTIVE{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                {% if keep_alive_status %}
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h5 mb-1 text-primary">{{ keep_alive_status.ping_count }}</div>
+                            <small class="text-muted">Total Pings</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h5 mb-1 {% if keep_alive_status.error_count == 0 %}text-success{% else %}text-warning{% endif %}">{{ keep_alive_status.error_count }}</div>
+                            <small class="text-muted">Errors</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h5 mb-1 text-info">{{ keep_alive_status.ping_interval }}s</div>
+                            <small class="text-muted">Interval</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            {% if keep_alive_status.last_ping_time %}
+                            <div class="h6 mb-1 text-success">{{ keep_alive_status.last_ping_time[:19] }}</div>
+                            <small class="text-muted">Last Ping</small>
+                            {% else %}
+                            <div class="h6 mb-1 text-muted">Never</div>
+                            <small class="text-muted">Last Ping</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    Keep-alive service is enabled but not running
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- System Status Section -->
 <div class="row mb-4">
     <div class="col-12">

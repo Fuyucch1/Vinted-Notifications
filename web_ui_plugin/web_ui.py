@@ -100,6 +100,12 @@ def index():
     # Get process status from the database
     telegram_running = db.get_parameter('telegram_process_running') == 'True'
     rss_running = db.get_parameter('rss_process_running') == 'True'
+    
+    # Get keep-alive status
+    import keep_alive
+    keep_alive_enabled = db.get_parameter('keep_alive_enabled') == 'True'
+    keep_alive_status = keep_alive.get_keep_alive_status() if keep_alive_enabled else None
+    keep_alive_running = keep_alive.is_keep_alive_running() if keep_alive_enabled else False
 
     # Get statistics for the dashboard
     stats = {
@@ -129,6 +135,9 @@ def index():
                            items=formatted_items,
                            telegram_running=telegram_running,
                            rss_running=rss_running,
+                           keep_alive_enabled=keep_alive_enabled,
+                           keep_alive_running=keep_alive_running,
+                           keep_alive_status=keep_alive_status,
                            stats=stats)
 
 
@@ -342,6 +351,21 @@ def update_config():
     dark_mode = 'dark_mode' in request.form
     db.set_parameter('dark_mode', str(dark_mode).lower())
 
+    # Update Keep-Alive parameters
+    keep_alive_enabled = 'keep_alive_enabled' in request.form
+    db.set_parameter('keep_alive_enabled', str(keep_alive_enabled))
+    keep_alive_interval = request.form.get('keep_alive_interval', '300')
+    # Validate interval range (60-3600 seconds)
+    try:
+        interval = int(keep_alive_interval)
+        if interval < 60:
+            interval = 60
+        elif interval > 3600:
+            interval = 3600
+        db.set_parameter('keep_alive_interval', str(interval))
+    except ValueError:
+        db.set_parameter('keep_alive_interval', '300')  # Default fallback
+
     # Update Proxy parameters
     check_proxies = 'check_proxies' in request.form
     db.set_parameter('check_proxies', str(check_proxies))
@@ -365,7 +389,7 @@ def auto_save_toggle():
         toggle_value = data.get('toggle_value')
         
         # Validate toggle name to prevent unauthorized parameter updates
-        allowed_toggles = ['telegram_enabled', 'rss_enabled', 'dark_mode', 'check_proxies']
+        allowed_toggles = ['telegram_enabled', 'rss_enabled', 'dark_mode', 'check_proxies', 'keep_alive_enabled']
         
         if toggle_name not in allowed_toggles:
             return jsonify({'status': 'error', 'message': 'Invalid toggle name'}), 400
@@ -455,6 +479,12 @@ def process_status():
     # Get process status from the database
     telegram_running = db.get_parameter('telegram_process_running') == 'True'
     rss_running = db.get_parameter('rss_process_running') == 'True'
+    
+    # Get keep-alive status
+    import keep_alive
+    keep_alive_enabled = db.get_parameter('keep_alive_enabled') == 'True'
+    keep_alive_status = keep_alive.get_keep_alive_status() if keep_alive_enabled else None
+    keep_alive_running = keep_alive.is_keep_alive_running() if keep_alive_enabled else False
 
     return jsonify({
         'telegram': telegram_running,

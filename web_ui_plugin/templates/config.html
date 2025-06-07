@@ -220,6 +220,48 @@
         </div>
     </div>
 
+    <!-- Keep-Alive Settings Section -->
+    <div class="settings-section">
+        <div class="section-header">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-heart-pulse me-2 text-danger"></i>
+                <h5 class="mb-0">Keep-Alive Service</h5>
+            </div>
+            <small class="text-muted">Prevent hosting platforms from shutting down due to inactivity</small>
+        </div>
+        <div class="section-body">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        {% if params.keep_alive_enabled == 'true' %}
+                        <input class="form-check-input" type="checkbox" id="keep_alive_enabled" name="keep_alive_enabled" checked>
+                        {% else %}
+                        <input class="form-check-input" type="checkbox" id="keep_alive_enabled" name="keep_alive_enabled">
+                        {% endif %}
+                        <label class="form-check-label" for="keep_alive_enabled">
+                            <i class="bi bi-power me-2"></i>Enable Keep-Alive Service
+                        </label>
+                        <div class="form-text">Automatically ping the application to keep it active on free hosting platforms</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="keep_alive_interval" name="keep_alive_interval" value="{{ params.keep_alive_interval or '300' }}" placeholder="Ping Interval" min="60" max="3600">
+                        <label for="keep_alive_interval"><i class="bi bi-clock me-2"></i>Ping Interval (seconds)</label>
+                        <div class="form-text">How often to ping the application (60-3600 seconds, default: 300)</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Hosting Platform Support:</strong><br>
+                        <small>Works with Render, Heroku, Railway, and other platforms that sleep inactive apps</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Proxy Settings Section -->
     <div class="settings-section">
         <div class="section-header">

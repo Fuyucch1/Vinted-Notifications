@@ -3,6 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
 from rss_feed_plugin.rss_feed import rss_feed_process
 from web_ui_plugin.web_ui import web_ui_process
+import keep_alive
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -342,6 +343,20 @@ if __name__ == "__main__":
     web_ui_process_instance = multiprocessing.Process(target=web_ui_process)
     web_ui_process_instance.start()
     logger.info(f"Web UI started on port {configuration_values.WEB_UI_PORT}")
+    
+    # 6. Start the keep-alive service to prevent hosting platforms from shutting down
+    # This will ping the web UI periodically to keep the application active
+    keep_alive_enabled = db.get_parameter('keep_alive_enabled')
+    if keep_alive_enabled == 'True':
+        # Get keep-alive interval from database, default to 5 minutes (300 seconds)
+        keep_alive_interval = db.get_parameter('keep_alive_interval')
+        interval = int(keep_alive_interval) if keep_alive_interval else 300
+        
+        # Start keep-alive service
+        keep_alive.start_keep_alive(ping_interval=interval)
+        logger.info(f"Keep-alive service started with {interval} second interval")
+    else:
+        logger.info("Keep-alive service is disabled")
 
 
     try:
@@ -359,6 +374,11 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         # Handle Ctrl+C gracefully
         logger.info("Main process interrupted")
+
+        # Stop keep-alive service
+        if keep_alive.is_keep_alive_running():
+            logger.info("Stopping keep-alive service...")
+            keep_alive.stop_keep_alive()
 
         # Shutdown the monitor scheduler
         monitor_scheduler.shutdown()
