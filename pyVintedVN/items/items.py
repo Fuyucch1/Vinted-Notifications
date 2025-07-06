@@ -87,6 +87,9 @@ class Items:
             "search_text": "+".join(
                 map(str, [tpl[1] for tpl in queries if tpl[0] == "search_text"])
             ),
+            "video_game_platform_ids": ",".join(
+                map(str, [tpl[1] for tpl in queries if tpl[0] == "video_game_platform_ids[]"])
+            ),
             "catalog_ids": ",".join(
                 map(str, [tpl[1] for tpl in queries if tpl[0] == "catalog[]"])
             ),
