@@ -170,7 +170,7 @@ if __name__ == "__main__":
         db.create_sqlite_db()
         logger.info("Database created successfully")
     # Set version
-    db.set_parameter('version', "1.0.1")
+    db.set_parameter('version', "1.0.2")
 
     # Plugin checker
     plugin_checker()

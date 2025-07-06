@@ -32,7 +32,7 @@ def create_sqlite_db():
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_process_running", "False"))
 
         # Version of the bot
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("version", "1.0.1"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("version", "1.0.2"))
         # GitHub URL
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)",
                        ("github_url", "https://github.com/Fuyucch1/Vinted-Notifications"))
@@ -61,7 +61,9 @@ def is_item_in_db_by_id(id):
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT() FROM items WHERE item=?", (id,))
-        return cursor.fetchone()[0]
+        if cursor.fetchone()[0]:
+            return True
+        return False
     except Exception:
         print_exc()
     finally:
