@@ -32,7 +32,7 @@ def create_sqlite_db():
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_process_running", "False"))
 
         # Version of the bot
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("version", "1.0.1"))
+        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("version", "1.0.2"))
         # GitHub URL
         cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)",
                        ("github_url", "https://github.com/Fuyucch1/Vinted-Notifications"))
