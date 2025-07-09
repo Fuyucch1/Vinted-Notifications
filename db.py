@@ -7,45 +7,16 @@ def get_db_connection():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-def create_sqlite_db():
+
+def create_or_update_sqlite_db(db_path):
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        # Using proper foreign key relationship between items and queries
-        cursor.execute("CREATE TABLE queries (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, last_item NUMERIC)")
-        cursor.execute(
-            "CREATE TABLE items (item NUMERIC, title TEXT, price NUMERIC, currency TEXT, timestamp NUMERIC, photo_url TEXT, query_id INTEGER, FOREIGN KEY(query_id) REFERENCES queries(id))")
-        cursor.execute("CREATE TABLE allowlist (country TEXT)")
-        # Add a parameters table
-        cursor.execute("CREATE TABLE parameters (key TEXT, value TEXT)")
-        # Telegram parameters
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_enabled", "False"))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_token", ""))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_chat_id", ""))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("telegram_process_running", "False"))
-
-        # RSS parameters
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_enabled", "False"))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_port", "8080"))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_max_items", "100"))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("rss_process_running", "False"))
-
-        # Version of the bot
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("version", "1.0.2"))
-        # GitHub URL
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)",
-                       ("github_url", "https://github.com/Fuyucch1/Vinted-Notifications"))
-
-        # System parameters
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("items_per_query", "20"))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("query_refresh_delay", "60"))
-
-        # Proxy parameters
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("proxy_list", ""))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("proxy_list_link", ""))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("check_proxies", "False"))
-        cursor.execute("INSERT INTO parameters (key, value) VALUES (?, ?)", ("last_proxy_check_time", "0"))
+        # Using the sql script
+        with open(db_path, "r") as sql_file:
+            sql_script = sql_file.read()
+            cursor.executescript(sql_script)
 
         conn.commit()
     except Exception:
