@@ -71,8 +71,14 @@ class LeRobot:
                 await update.message.reply_text('No query provided.')
                 return
 
+            # Split the message into name=query if it contains an equal sign before the url. Store them separately
+            if '=http' in query[0]:
+                name, url = query[0].split('=', 1)
+            else:
+                name = None
+                url = query[0]
             # Process the query using the core function
-            message, is_new_query = core.process_query(query[0])
+            message, is_new_query = core.process_query(url, name)
 
             if is_new_query:
                 # Create a string with all the keywords

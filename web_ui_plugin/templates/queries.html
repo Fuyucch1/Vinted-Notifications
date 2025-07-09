@@ -16,15 +16,35 @@
             </div>
             <div class="card-body">
                 <form action="/add_query" method="post">
-                    <div class="row">
-                        <div class="col-md-10">
-                            <div class="form-group">
-                                <label for="query">Vinted URL or Search Query</label>
-                                <input type="text" class="form-control" id="query" name="query"
-                                       placeholder="https://www.vinted.fr/catalog?search_text=nike+dunk" required>
-                                <small class="form-text text-muted">Enter a Vinted search URL or a search term</small>
+                    <div class="row g-3">
+
+                        <!-- Vinted URL (required) -->
+                        <div class="col-md-7">
+                            <label for="query" class="form-label">Vinted search URL <span
+                                    class="text-danger">*</span></label>
+                            <input type="url"
+                                   class="form-control"
+                                   id="query"
+                                   name="query"
+                                   placeholder="https://www.vinted.fr/catalog?search_text=nike+shoes"
+                                   required
+                                   pattern="https?://(www\.)?vinted\.[a-z]{2,}(/.*)?">
+                            <div class="form-text">
+                                Paste a valid Vinted search URL (e.g.&nbsp;`https://www.vinted.fr/catalog?...`)
                             </div>
                         </div>
+
+                        <!-- Name (optional) -->
+                        <div class="col-md-3">
+                            <label for="query_name" class="form-label">Name&nbsp;<span
+                                    class="text-muted">(optional)</span></label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="query_name"
+                                   name="query_name"
+                                   placeholder="My search">
+                        </div>
+
                         <div class="col-md-2 d-flex align-items-center">
                             <button type="submit" class="btn btn-primary w-100">Add Query</button>
                         </div>

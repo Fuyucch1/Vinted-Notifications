@@ -97,7 +97,7 @@ def get_queries():
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT id, query, last_item FROM queries")
+        cursor.execute("SELECT id, query, last_item, query_name FROM queries")
         return cursor.fetchall()
     except Exception:
         print_exc()
@@ -124,12 +124,16 @@ def is_query_in_db(processed_query):
         if conn:
             conn.close()
 
-def add_query_to_db(query):
+
+def add_query_to_db(query, name=None):
     conn = None
     try:
         conn = sqlite3.connect("vinted_notifications.db")
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO queries (query, last_item) VALUES (?, NULL)", (query,))
+        if name:
+            cursor.execute("INSERT INTO queries (query, last_item, query_name) VALUES (?, NULL, ?)", (query, name))
+        else:
+            cursor.execute("INSERT INTO queries (query, last_item) VALUES (?, NULL)", (query,))
         conn.commit()
     except Exception:
         print_exc()

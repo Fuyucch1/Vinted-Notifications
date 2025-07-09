@@ -44,7 +44,7 @@ def index():
     for i, query in enumerate(queries):
         parsed_query = urlparse(query[1])
         query_params = parse_qs(parsed_query.query)
-        search_text = query_params.get('search_text', [None])[0]
+        query_name = query[3] if query[3] is not None else query_params.get('search_text', [None])[0]
 
         # Get the last timestamp for this query
         try:
@@ -56,7 +56,7 @@ def index():
         formatted_queries.append({
             'id': i + 1,
             'query': query[0],
-            'display': search_text if search_text else query[0],
+            'display': query_name if query_name else query[0],
             'last_found_item': last_found_item
         })
 
@@ -117,7 +117,7 @@ def queries():
     for i, query in enumerate(all_queries):
         parsed_query = urlparse(query[1])
         query_params = parse_qs(parsed_query.query)
-        search_text = query_params.get('search_text', [None])[0]
+        query_name = query[3] if query[3] is not None else query_params.get('search_text', [None])[0]
 
         # Get the last timestamp for this query
         try:
@@ -129,7 +129,7 @@ def queries():
         formatted_queries.append({
             'id': i + 1,
             'query': query[0],
-            'display': search_text if search_text else query[1],
+            'display': query_name if query_name else query[1],
             'last_found_item': last_found_item
         })
 
@@ -139,8 +139,9 @@ def queries():
 @app.route('/add_query', methods=['POST'])
 def add_query():
     query = request.form.get('query')
+    query_name = request.form.get('query_name', '').strip()
     if query:
-        message, is_new_query = core.process_query(query)
+        message, is_new_query = core.process_query(query, name=query_name if query_name != '' else None)
         if is_new_query:
             flash(f'Query added: {query}', 'success')
         else:
@@ -210,8 +211,8 @@ def items():
     for i, q in enumerate(queries):
         parsed_query = urlparse(q[1])
         query_params = parse_qs(parsed_query.query)
-        search_text = query_params.get('search_text', [None])[0]
-        display_name = search_text if search_text else q[0]
+        query_name = q[3] if q[3] is not None else query_params.get('search_text', [None])[0]
+        display_name = query_name if query_name else q[0]
         # Store display name for selected query
         if query_id == str(q[0]):
             selected_query_display = display_name
