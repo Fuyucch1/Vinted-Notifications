@@ -6,7 +6,8 @@ from logger import get_logger
 # Get logger for this module
 logger = get_logger(__name__)
 
-def process_query(query):
+
+def process_query(query, name=None):
     """
     Process a Vinted query URL by:
     1. Parsing the URL and extracting query parameters
@@ -18,6 +19,7 @@ def process_query(query):
 
     Args:
         query (str): The Vinted query URL
+        name (str, optional): A name for the query. If provided, it will be used as the query name.
 
     Returns:
         tuple: (message, is_new_query)
@@ -48,7 +50,7 @@ def process_query(query):
         return "Query already exists.", False
     else:
         # add the query to the db
-        db.add_query_to_db(processed_query)
+        db.add_query_to_db(processed_query, name)
         return "Query added.", True
 
 def get_formatted_query_list():
@@ -64,14 +66,14 @@ def get_formatted_query_list():
         parsed_url = urlparse(query[1])
         query_params = parse_qs(parsed_url.query)
 
-        # Extract the value of 'search_text'
-        search_text = query_params.get('search_text', [None])
+        # Get the name or Extract the value of 'search_text'
+        query_name = query[3] if query[3] is not None else query_params.get('search_text', [None])[0]
 
-        if search_text[0] is None:
+        if query_name[0] is None:
             # Use query text instead of the whole query object
             queries_keywords.append([query[1]])
         else:
-            queries_keywords.append(search_text)
+            queries_keywords.append(query_name)
 
     query_list = ("\n").join([str(i + 1) + ". " + j[0] for i, j in enumerate(queries_keywords)])
     return query_list

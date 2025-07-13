@@ -167,10 +167,22 @@ if __name__ == "__main__":
     # Starting sequence
     # Db check
     if not os.path.exists("./vinted_notifications.db"):
-        db.create_sqlite_db()
+        db.create_or_update_sqlite_db("initial_db.sql")
         logger.info("Database created successfully")
-    # Set version
-    db.set_parameter('version', "1.0.2")
+    else:
+        current_version = db.get_parameter('version')
+        # Check if there is a file that starts with the current version in the migrations folder. We keep comparing until
+        # we find no migration files that start with the current version.
+        migration_files = [f for f in os.listdir('migrations')]
+        while True:
+            migration_file = next((f for f in migration_files if f.startswith(current_version)), None)
+            if migration_file:
+                logger.info(f"Running migration: {migration_file}")
+                db.create_or_update_sqlite_db("./migrations/" + migration_file)
+                # Increment the version
+                current_version = db.get_parameter('version')
+            else:
+                break
 
     # Plugin checker
     plugin_checker()
