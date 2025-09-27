@@ -104,6 +104,44 @@ def process_remove_query(number):
     return "Query removed.", True
 
 
+def process_update_query(query_id, query, name):
+    """
+    Process the update of a query in the database.
+
+    Args:
+        query_id (int): The ID of the query to update
+        query (str): The new Vinted query URL
+        name (str, optional): A new name for the query. If provided, it will be used as the query name.
+
+    Returns:
+        tuple: (message, success)
+            - message (str): Status message
+            - success (bool): True if query was updated successfully
+    """
+    # Parse the URL and extract the query parameters
+    parsed_url = urlparse(query)
+    query_params = parse_qs(parsed_url.query)
+
+    # Ensure the order flag is set to newest_first
+    query_params['order'] = ['newest_first']
+    # Remove time and search_id if provided
+    query_params.pop('time', None)
+    query_params.pop('search_id', None)
+    query_params.pop('disabled_personalization', None)
+    query_params.pop('page', None)
+
+    # Rebuild the query string and the entire URL
+    new_query = urlencode(query_params, doseq=True)
+    processed_query = urlunparse(
+        (parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
+
+    # Update the query in the database
+    if db.update_query_in_db(query_id, processed_query, name):
+        return "Query updated.", True
+    else:
+        return "Failed to update query.", False
+
+
 def process_add_country(country):
     """
     Process the addition of a country to the allowlist.

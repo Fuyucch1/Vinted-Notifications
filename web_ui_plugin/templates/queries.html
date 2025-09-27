@@ -81,14 +81,68 @@
                             <td>{{ query.last_found_item }}</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="/items?query={{ query.query|urlencode }}"
+                                    <a href="/items?query={{ query.query_id }}"
                                        class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-box"></i> View Items
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editModal{{ query.id }}">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
                                             data-bs-target="#deleteModal{{ query.id }}">
                                         <i class="bi bi-trash"></i> Remove
                                     </button>
+                                </div>
+
+                                <!-- Edit Modal -->
+                                <div class="modal fade" id="editModal{{ query.id }}" tabindex="-1"
+                                     aria-labelledby="editModalLabel{{ query.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="editModalLabel{{ query.id }}">Edit
+                                                    Query</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                        aria-label="Close"></button>
+                                            </div>
+                                            <form action="/update_query/{{ query.query_id }}" method="post">
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="query{{ query.id }}" class="form-label">Vinted
+                                                            search URL <span class="text-danger">*</span></label>
+                                                        <input type="url"
+                                                               class="form-control"
+                                                               id="query{{ query.id }}"
+                                                               name="query"
+                                                               value="{{ query.query }}"
+                                                               placeholder="https://www.vinted.fr/catalog?search_text=nike+shoes"
+                                                               required
+                                                               pattern="^https?:\/\/(?:www\.)?vinted\.[a-z]{2,}(?:\.[a-z]{2,})*(\/.*)?$">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="query_name{{ query.id }}" class="form-label">Name
+                                                            <span class="text-danger">*</span></label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               id="query_name{{ query.id }}"
+                                                               name="query_name"
+                                                               value="{{ query.display if query.display != query.query else '' }}"
+                                                               required
+                                                               placeholder="My search">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Delete Modal -->
@@ -110,7 +164,7 @@
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                                     Cancel
                                                 </button>
-                                                <form action="/remove_query/{{ query.id }}" method="post"
+                                                <form action="/remove_query/{{ query.query_id }}" method="post"
                                                       class="d-inline">
                                                     <button type="submit" class="btn btn-danger">Remove</button>
                                                 </form>
