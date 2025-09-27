@@ -10,12 +10,13 @@ logger = get_logger(__name__)
 def process_query(query, name=None):
     """
     Process a Vinted query URL by:
-    1. Parsing the URL and extracting query parameters
-    2. Ensuring the order flag is set to "newest_first"
-    3. Removing time and search_id parameters
-    4. Rebuilding the query string and URL
-    5. Checking if the query already exists in the database
-    6. Adding the query to the database if it doesn't exist
+    1. Checking if the URL is a brand URL and converting it to standard format if needed
+    2. Parsing the URL and extracting query parameters
+    3. Ensuring the order flag is set to "newest_first"
+    4. Removing time and search_id parameters
+    5. Rebuilding the query string and URL
+    6. Checking if the query already exists in the database
+    7. Adding the query to the database if it doesn't exist
 
     Args:
         query (str): The Vinted query URL
@@ -26,6 +27,26 @@ def process_query(query, name=None):
             - message (str): Status message
             - is_new_query (bool): True if query was added, False if it already existed
     """
+    # Check if the URL is a brand URL (format: url/brand/id-name)
+    parsed_url = urlparse(query)
+    path_parts = parsed_url.path.strip('/').split('/')
+
+    if len(path_parts) >= 2 and path_parts[0] == 'brand':
+        # Extract the brand ID from the format "id-name"
+        brand_id_with_name = path_parts[1]
+        brand_id = brand_id_with_name.split('-')[0]
+
+        # Create a new URL with the standard format
+        new_path = '/catalog'
+        new_query_params = {'brand_ids[]': [brand_id]}
+        new_query_string = urlencode(new_query_params, doseq=True)
+
+        # Rebuild the URL
+        query = urlunparse(
+            (parsed_url.scheme, parsed_url.netloc, new_path, '', new_query_string, '')
+        )
+        logger.info(f"Converted brand URL to standard format: {query}")
+
     # Parse the URL and extract the query parameters
     parsed_url = urlparse(query)
     query_params = parse_qs(parsed_url.query)
