@@ -47,8 +47,9 @@ def process_query(query, name=None):
         )
         logger.info(f"Converted brand URL to standard format: {query}")
 
-    # Parse the URL and extract the query parameters
-    parsed_url = urlparse(query)
+        # Parse the URL and extract the query parameters
+        parsed_url = urlparse(query)
+
     query_params = parse_qs(parsed_url.query)
 
     # Ensure the order flag is set to newest_first
