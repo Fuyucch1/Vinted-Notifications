@@ -108,9 +108,12 @@ class Requester:
 
                     # New try : if we still get a 401 or 403, we reset the session
                     if response.status_code in (401, 403) and not new_session:
-                        # Log the error details for 403 errors
-                        if response.status_code == 403:
-                            logger.error(f"Received 403 Forbidden error for URL: {url}")
+                        # Log the error details for 401 and 403 errors, including headers and body snippet
+                        logger.error(
+                            f"Received {response.status_code} error for URL: {url}\n"
+                            f"Response headers: {dict(response.headers)}\n"
+                            f"Response body (first 500 chars): {response.text[:500]}"
+                        )
 
                         new_session = True
                         self.session = requests.Session()
