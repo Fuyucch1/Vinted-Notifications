@@ -29,6 +29,10 @@ class ExcludeFilter(logging.Filter):
         if record.name == 'httpx' and 'HTTP Request:' in record.getMessage():
             return False
 
+        # Filter out log refresh requests from the web UI
+        if record.name == 'werkzeug' and 'GET /api/logs' in record.getMessage():
+            return False
+
         return True
 
 
