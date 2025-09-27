@@ -23,7 +23,8 @@
                                 <select class="form-select" id="query" name="query">
                                     <option value="">All Queries</option>
                                     {% for query in queries %}
-                                    <option value="{{ query.query }}" {% if selected_query== query.query %}selected{%
+                                    <option value="{{ query.query_id }}" {% if selected_query== query.query_id
+                                            %}selected{%
                                             endif %}>
                                         {{ query.display }}
                                     </option>

@@ -181,6 +181,33 @@ def remove_all_queries_from_db():
             conn.close()
 
 
+def update_query_in_db(query_id, query, name):
+    """
+    Update an existing query in the database.
+
+    Args:
+        query_id (int): The ID of the query to update
+        query (str): The new query URL
+        name (str, optional): The new name for the query
+
+    Returns:
+        bool: True if the query was updated successfully, False otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect("vinted_notifications.db")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE queries SET query=?, query_name=? WHERE id=?", (query, name, query_id))
+        conn.commit()
+        return True
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
 def add_to_allowlist(country):
     conn = None
     try:

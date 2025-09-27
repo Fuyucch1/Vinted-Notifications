@@ -55,8 +55,9 @@ def index():
 
         formatted_queries.append({
             'id': i + 1,
-            'query': query[0],
-            'display': query_name if query_name else query[0],
+            'query_id': query[0],
+            'query': query[1],
+            'display': query_name if query_name else query[1],
             'last_found_item': last_found_item
         })
 
@@ -128,7 +129,8 @@ def queries():
 
         formatted_queries.append({
             'id': i + 1,
-            'query': query[0],
+            'query_id': query[0],
+            'query': query[1],
             'display': query_name if query_name else query[1],
             'last_found_item': last_found_item
         })
@@ -170,6 +172,27 @@ def remove_all_queries():
         flash('All queries removed', 'success')
     else:
         flash(message, 'error')
+
+    return redirect(url_for('queries'))
+
+
+@app.route('/update_query/<int:query_id>', methods=['POST'])
+def update_query(query_id):
+    query = request.form.get('query')
+    query_name = request.form.get('query_name', '').strip()
+
+    if query:
+        message, success = core.process_update_query(
+            query_id,
+            query,
+            name=query_name if query_name != '' else None
+        )
+        if success:
+            flash('Query updated', 'success')
+        else:
+            flash(message, 'error')
+    else:
+        flash('No query provided', 'error')
 
     return redirect(url_for('queries'))
 
@@ -218,7 +241,8 @@ def items():
             selected_query_display = display_name
         formatted_queries.append({
             'id': i + 1,
-            'query': str(q[0]),  # Ensure query is a string
+            'query_id': q[0],
+            'query': q[1],
             'display': display_name
         })
 
