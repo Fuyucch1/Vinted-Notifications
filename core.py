@@ -104,7 +104,7 @@ def process_remove_query(number):
     return "Query removed.", True
 
 
-def process_update_query(query_id, query, name=None):
+def process_update_query(query_id, query, name):
     """
     Process the update of a query in the database.
 
