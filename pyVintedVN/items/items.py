@@ -18,8 +18,14 @@ class Items:
         >>> results = items.search("https://www.vinted.fr/catalog?search_text=shoes")
     """
 
-    def search(self, url: str, nbr_items: int = 20, page: int = 1,
-               time: Optional[int] = None, json: bool = False) -> List[Item]:
+    def search(
+            self,
+            url: str,
+            nbr_items: int = 20,
+            page: int = 1,
+            time: Optional[int] = None,
+            json: bool = False,
+    ) -> List[Item]:
         """
         Retrieve items from a given search URL on Vinted.
 
@@ -28,7 +34,7 @@ class Items:
             nbr_items (int, optional): Number of items to be returned. Defaults to 20.
             page (int, optional): Page number to be returned. Defaults to 1.
             time (int, optional): Timestamp to filter items by time. Defaults to None. Looks like it doesn't work though.
-            json (bool, optional): Whether to return raw JSON data instead of Item objects. 
+            json (bool, optional): Whether to return raw JSON data instead of Item objects.
                 Defaults to False.
 
         Returns:
@@ -45,7 +51,9 @@ class Items:
         params = self.parse_url(url, nbr_items, page, time)
 
         # Construct the API URL
-        api_url = f"https://{locale}{Urls.VINTED_API_URL}/{Urls.VINTED_PRODUCTS_ENDPOINT}"
+        api_url = (
+            f"https://{locale}{Urls.VINTED_API_URL}/{Urls.VINTED_PRODUCTS_ENDPOINT}"
+        )
 
         try:
             # Make the request to the Vinted API
@@ -65,8 +73,9 @@ class Items:
         except HTTPError as err:
             raise err
 
-    def parse_url(self, url: str, nbr_items: int = 20, page: int = 1,
-                  time: Optional[int] = None) -> Dict:
+    def parse_url(
+            self, url: str, nbr_items: int = 20, page: int = 1, time: Optional[int] = None
+    ) -> Dict:
         """
         Parse a Vinted search URL to get parameters for the API call.
 
@@ -88,7 +97,14 @@ class Items:
                 map(str, [tpl[1] for tpl in queries if tpl[0] == "search_text"])
             ),
             "video_game_platform_ids": ",".join(
-                map(str, [tpl[1] for tpl in queries if tpl[0] == "video_game_platform_ids[]"])
+                map(
+                    str,
+                    [
+                        tpl[1]
+                        for tpl in queries
+                        if tpl[0] == "video_game_platform_ids[]"
+                    ],
+                )
             ),
             "catalog_ids": ",".join(
                 map(str, [tpl[1] for tpl in queries if tpl[0] == "catalog[]"])
@@ -131,7 +147,7 @@ class Items:
             "order": ",".join(
                 map(str, [tpl[1] for tpl in queries if tpl[0] == "order"])
             ),
-            "time": time
+            "time": time,
         }
 
         return params

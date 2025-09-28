@@ -20,13 +20,13 @@ class RSSFeed:
 
         # Initialize feed generator
         self.fg = FeedGenerator()
-        self.fg.title('Vinted Notifications')
-        self.fg.description('Latest items from Vinted matching your search queries')
+        self.fg.title("Vinted Notifications")
+        self.fg.description("Latest items from Vinted matching your search queries")
         self.fg.link(href=f'http://localhost:{db.get_parameter("rss_port")}')
-        self.fg.language('en')
+        self.fg.language("en")
 
         # Set up routes
-        self.app.route('/')(self.serve_rss)
+        self.app.route("/")(self.serve_rss)
 
         # Start thread to check queue
         self.thread = threading.Thread(target=self.run_check_queue)
@@ -49,16 +49,18 @@ class RSSFeed:
                 # Add item to the feed
                 self.add_item_to_feed(content, url)
             except Exception as e:
-                logger.error(f"Error processing item for RSS feed: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Error processing item for RSS feed: {str(e)}", exc_info=True
+                )
 
     def add_item_to_feed(self, content, url):
         # Extract title from content (assuming it's in the format from configuration_values.MESSAGE)
         title = "New Vinted Item"
         try:
             # Try to extract title from the content
-            title_start = content.find('🆕 Title : ') + len('🆕 Title : ')
-            if title_start > len('🆕 Title : '):
-                title_end = content.find('\n', title_start)
+            title_start = content.find("🆕 Title : ") + len("🆕 Title : ")
+            if title_start > len("🆕 Title : "):
+                title_end = content.find("\n", title_start)
                 if title_end > 0:
                     title = content[title_start:title_end]
         except Exception as e:
@@ -81,14 +83,14 @@ class RSSFeed:
             self.items.pop(0)
 
     def serve_rss(self):
-        return Response(self.fg.rss_str(), mimetype='application/rss+xml')
+        return Response(self.fg.rss_str(), mimetype="application/rss+xml")
 
     def run(self):
 
         try:
             port = db.get_parameter("rss_port")
             logger.info(f"Starting RSS feed server on port {port}")
-            self.app.run(host='0.0.0.0', port=port)
+            self.app.run(host="0.0.0.0", port=port)
         except Exception as e:
             logger.error(f"Error starting RSS feed server: {str(e)}", exc_info=True)
 

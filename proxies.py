@@ -22,6 +22,7 @@ MAX_PROXY_WORKERS = 10
 # Time interval in seconds after which proxies should be rechecked (6 hours)
 PROXY_RECHECK_INTERVAL = 6 * 60 * 60
 
+
 def fetch_proxies_from_link(url: str) -> List[str]:
     """
     Fetch proxies from a URL.
@@ -42,6 +43,7 @@ def fetch_proxies_from_link(url: str) -> List[str]:
         # If there's any error fetching proxies, return an empty list
         return []
 
+
 def check_proxies_parallel(proxies_list: List[str]) -> List[str]:
     """
     Check multiple proxies in parallel using a thread pool.
@@ -55,9 +57,13 @@ def check_proxies_parallel(proxies_list: List[str]) -> List[str]:
     working_proxies = []
 
     # Use ThreadPoolExecutor to check proxies in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PROXY_WORKERS) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=MAX_PROXY_WORKERS
+    ) as executor:
         # Submit all proxy checking tasks
-        future_to_proxy = {executor.submit(check_proxy, proxy): proxy for proxy in proxies_list}
+        future_to_proxy = {
+            executor.submit(check_proxy, proxy): proxy for proxy in proxies_list
+        }
 
         # Process results as they complete
         for future in concurrent.futures.as_completed(future_to_proxy):
@@ -97,12 +103,16 @@ def get_random_proxy() -> Optional[str]:
 
     # Get the last proxy check time from the database
     last_proxy_check_time_str = db.get_parameter("last_proxy_check_time")
-    last_proxy_check_time = float(last_proxy_check_time_str) if last_proxy_check_time_str else 0
+    last_proxy_check_time = (
+        float(last_proxy_check_time_str) if last_proxy_check_time_str else 0
+    )
 
     # Check if we need to recheck proxies (if more than PROXY_RECHECK_INTERVAL seconds have passed)
-    if (_PROXY_CACHE_INITIALIZED and
-            last_proxy_check_time > 0 and
-            current_time - last_proxy_check_time > PROXY_RECHECK_INTERVAL):
+    if (
+            _PROXY_CACHE_INITIALIZED
+            and last_proxy_check_time > 0
+            and current_time - last_proxy_check_time > PROXY_RECHECK_INTERVAL
+    ):
         # Reset cache to force recheck
         _PROXY_CACHE_INITIALIZED = False
         _PROXY_CACHE = None
@@ -134,7 +144,7 @@ def get_random_proxy() -> Optional[str]:
     proxy_list = db.get_parameter("proxy_list")
     if proxy_list:
         # If PROXY_LIST is a string with multiple proxies separated by semicolons
-        all_proxies = [p.strip() for p in proxy_list.split(';') if p.strip()]
+        all_proxies = [p.strip() for p in proxy_list.split(";") if p.strip()]
 
     # Check if PROXY_LIST_LINK is configured in the database
     proxy_list_link = db.get_parameter("proxy_list_link")
@@ -197,17 +207,19 @@ def check_proxy(proxy: str) -> bool:
         import json
 
         # Get user agents and default headers from the database
-        user_agents_json = db.get_parameter('user_agents')
-        default_headers_json = db.get_parameter('default_headers')
+        user_agents_json = db.get_parameter("user_agents")
+        default_headers_json = db.get_parameter("default_headers")
 
         # Parse JSON strings
         user_agents = json.loads(user_agents_json) if user_agents_json else []
-        default_headers = json.loads(default_headers_json) if default_headers_json else {}
+        default_headers = (
+            json.loads(default_headers_json) if default_headers_json else {}
+        )
 
         # Set random user agent and default headers
         headers = {
             "User-Agent": random.choice(user_agents) if user_agents else "Mozilla/5.0",
-            **default_headers
+            **default_headers,
         }
         session.headers.update(headers)
 
@@ -221,7 +233,7 @@ def check_proxy(proxy: str) -> bool:
         return False
     finally:
         # Ensure the session is closed to prevent resource leaks
-        if 'session' in locals():
+        if "session" in locals():
             session.close()
 
 
@@ -238,9 +250,9 @@ def convert_proxy_string_to_dict(proxy: Optional[str]) -> dict:
     if proxy is None:
         return {}
 
-    if '://' in proxy:
+    if "://" in proxy:
         # Protocol is specified (e.g., "http://127.0.0.1:8080")
-        protocol, address = proxy.split('://')
+        protocol, address = proxy.split("://")
         if protocol == "http":
             return {"http": f"{proxy}", "https": f"{proxy}"}
         return {protocol: proxy}

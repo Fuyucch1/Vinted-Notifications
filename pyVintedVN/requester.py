@@ -39,12 +39,14 @@ class Requester:
         import db
 
         # Get user agents and default headers from the database
-        user_agents_json = db.get_parameter('user_agents')
-        default_headers_json = db.get_parameter('default_headers')
+        user_agents_json = db.get_parameter("user_agents")
+        default_headers_json = db.get_parameter("default_headers")
 
         # Parse JSON strings
         user_agents = json.loads(user_agents_json) if user_agents_json else []
-        default_headers = json.loads(default_headers_json) if default_headers_json else {}
+        default_headers = (
+            json.loads(default_headers_json) if default_headers_json else {}
+        )
 
         self.HEADER = {
             # Grabs a user agent from the database
@@ -72,12 +74,14 @@ class Requester:
         """
         self.VINTED_AUTH_URL = f"https://{locale}/"
         # Get user agents and default headers from the database
-        user_agents_json = db.get_parameter('user_agents')
-        default_headers_json = db.get_parameter('default_headers')
+        user_agents_json = db.get_parameter("user_agents")
+        default_headers_json = db.get_parameter("default_headers")
 
         # Parse JSON strings
         user_agents = json.loads(user_agents_json) if user_agents_json else []
-        default_headers = json.loads(default_headers_json) if default_headers_json else {}
+        default_headers = (
+            json.loads(default_headers_json) if default_headers_json else {}
+        )
 
         self.HEADER = {
             "User-Agent": random.choice(user_agents) if user_agents else "Mozilla/5.0",
@@ -86,7 +90,9 @@ class Requester:
         }
         self.session.headers.update(self.HEADER)
         if self.debug:
-            logger.debug(f"Locale set to {locale} with User-Agent: {self.HEADER['User-Agent']}")
+            logger.debug(
+                f"Locale set to {locale} with User-Agent: {self.HEADER['User-Agent']}"
+            )
 
     def get(self, url, params=None):
         """
@@ -119,7 +125,9 @@ class Requester:
                 if response.status_code in (401, 404) and tried < self.MAX_RETRIES:
                     print(f"Cookies invalid, retrying {tried}/{self.MAX_RETRIES}")
                     if self.debug:
-                        logger.debug(f"Cookies invalid retrying {tried}/{self.MAX_RETRIES}")
+                        logger.debug(
+                            f"Cookies invalid retrying {tried}/{self.MAX_RETRIES}"
+                        )
                     self.set_cookies()
                 elif response.status_code == 200:
                     return response
@@ -142,13 +150,17 @@ class Requester:
                         # proxy
                         proxy_configured = proxies.configure_proxy(self.session)
                         if self.debug:
-                            logger.debug(f"Session reset due to {response.status_code} error")
+                            logger.debug(
+                                f"Session reset due to {response.status_code} error"
+                            )
                         tried = 0
                         continue
                     return response
 
         # This should only happen if the loop exits without returning
-        raise HTTPError(f"Failed to get a valid response after {self.MAX_RETRIES} attempts")
+        raise HTTPError(
+            f"Failed to get a valid response after {self.MAX_RETRIES} attempts"
+        )
 
     def post(self, url, params=None):
         """
@@ -187,8 +199,9 @@ class Requester:
                 logger.debug("Cookies set!")
         except Exception:
             if self.debug:
-                logger.error("There was an error fetching cookies for vinted", exc_info=True)
-
+                logger.error(
+                    "There was an error fetching cookies for vinted", exc_info=True
+                )
 
     def update_cookies(self, cookies: dict):
         """
@@ -204,6 +217,7 @@ class Requester:
     # Alias for backward compatibility
     setLocale = set_locale
     setCookies = set_cookies
+
 
 # Singleton instance of the Requester class
 requester = Requester()

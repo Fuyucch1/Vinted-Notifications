@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+
 class Item:
     """
     Represents a single item from Vinted.
@@ -20,6 +21,7 @@ class Item:
         created_at_ts (datetime): The timestamp when the item was created.
         raw_timestamp (int): The raw timestamp value from the API.
     """
+
     def __init__(self, data):
         """
         Initialize an Item with data from the Vinted API.
@@ -41,8 +43,11 @@ class Item:
         self.photo = data["photo"]["url"]
         self.url = data["url"]
         # We keep everything before the "items"
-        self.buy_url = data["url"].split("items")[
-                           0] + "transaction/buy/new?source_screen=item&transaction%5Bitem_id%5D=" + str(data["id"])
+        self.buy_url = (
+                data["url"].split("items")[0]
+                + "transaction/buy/new?source_screen=item&transaction%5Bitem_id%5D="
+                + str(data["id"])
+        )
         self.created_at_ts = datetime.fromtimestamp(
             data["photo"]["high_resolution"]["timestamp"], tz=timezone.utc
         )
@@ -74,7 +79,7 @@ class Item:
         Returns:
             int: A hash value for the item.
         """
-        return hash(('id', self.id))
+        return hash(("id", self.id))
 
     def is_new_item(self, minutes=20):
         """
