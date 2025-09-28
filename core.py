@@ -140,8 +140,6 @@ def process_remove_query(number):
         return "Invalid number.", False
 
 
-
-
 def process_update_query(query_id, query, name):
     """
     Process the update of a query in the database.

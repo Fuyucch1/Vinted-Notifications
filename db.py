@@ -156,12 +156,13 @@ def add_query_to_db(query, name=None):
         if conn:
             conn.close()
 
+
 def get_query_id_by_rowid(rowid):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        query= f"SELECT id FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={rowid}"
+        query = f"SELECT id FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={rowid}"
         cursor.execute(query)
         result = cursor.fetchone()
         if result:
@@ -173,6 +174,7 @@ def get_query_id_by_rowid(rowid):
     finally:
         if conn:
             conn.close()
+
 
 def remove_query_from_db(query_number):
     conn = None
