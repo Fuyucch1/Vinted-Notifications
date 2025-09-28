@@ -140,7 +140,7 @@ class LeRobot:
     async def clear_allowlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
             db.clear_allowlist()
-            await update.message.reply_text(f'Allowlist cleared. All countries are allowed.')
+            await update.message.reply_text('Allowlist cleared. All countries are allowed.')
         except Exception as e:
             logger.error(f"Error clearing allowlist: {str(e)}", exc_info=True)
             try:
@@ -190,7 +190,7 @@ class LeRobot:
     async def allowlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
             if db.get_allowlist() == 0:
-                await update.message.reply_text(f'No allowlist set. All countries are allowed.')
+                await update.message.reply_text('No allowlist set. All countries are allowed.')
             else:
                 await update.message.reply_text(f'Current allowlist: {db.get_allowlist()}')
         except Exception as e:
