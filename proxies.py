@@ -216,7 +216,7 @@ def check_proxy(proxy: str) -> bool:
 
         # Check if the request was successful
         return response.status_code == 200
-    except (RequestException, ConnectionError, TimeoutError) as e:
+    except (RequestException, ConnectionError, TimeoutError):
         # Any exception means the proxy is not working
         return False
     finally:

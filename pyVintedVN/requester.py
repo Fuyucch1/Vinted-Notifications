@@ -1,4 +1,10 @@
-import json, proxies, sys, os, db, random, requests
+import json
+import proxies
+import sys
+import os
+import db
+import random
+import requests
 from requests.exceptions import HTTPError
 
 # Add the parent directory to sys.path to import logger
@@ -179,9 +185,9 @@ class Requester:
             self.session.head(self.VINTED_AUTH_URL)
             if self.debug:
                 logger.debug("Cookies set!")
-        except Exception as e:
+        except Exception:
             if self.debug:
-                logger.error(f"There was an error fetching cookies for vinted", exc_info=True)
+                logger.error("There was an error fetching cookies for vinted", exc_info=True)
 
 
     def update_cookies(self, cookies: dict):

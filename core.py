@@ -1,4 +1,5 @@
-import db, requests
+import db
+import requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
@@ -59,8 +60,6 @@ def process_query(query, name=None):
     query_params.pop('search_id', None)
     query_params.pop('disabled_personalization', None)
     query_params.pop('page', None)
-
-    searched_text = query_params.get('search_text')
 
     # Rebuild the query string and the entire URL
     new_query = urlencode(query_params, doseq=True)

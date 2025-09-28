@@ -1,7 +1,9 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.error import RetryAfter
-import db, core, asyncio
+import db
+import core
+import asyncio
 from logger import get_logger
 
 # Get logger for this module
@@ -16,8 +18,8 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.error(f"Error in hello command: {str(e)}", exc_info=True)
         try:
             await update.message.reply_text('An error occurred. Please try again later.')
-        except:
-            pass
+        except Exception as e2:
+            logger.error(f"Error sending error message: {str(e2)}")
 
 
 class LeRobot:
@@ -90,8 +92,8 @@ class LeRobot:
             logger.error(f"Error adding query: {str(e)}", exc_info=True)
             try:
                 await update.message.reply_text('An error occurred while adding the query. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     # Remove a query from the db
     async def remove_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -117,8 +119,8 @@ class LeRobot:
             logger.error(f"Error removing query: {str(e)}", exc_info=True)
             try:
                 await update.message.reply_text('An error occurred while removing the query. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     # get all queries from the db
     async def queries(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -130,8 +132,8 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while retrieving the queries. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     ### ALLOWLIST ###
 
@@ -144,8 +146,8 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while clearing the allowlist. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     async def add_country(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
@@ -163,8 +165,8 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while adding the country to the allowlist. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     async def remove_country(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
@@ -182,8 +184,8 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while removing the country from the allowlist. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     async def allowlist(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
@@ -196,8 +198,8 @@ class LeRobot:
             try:
                 await update.message.reply_text(
                     'An error occurred while retrieving the allowlist. Please try again later.')
-            except:
-                pass
+            except Exception as e2:
+                logger.error(f"Error sending error message: {str(e2)}")
 
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 

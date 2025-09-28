@@ -1,5 +1,9 @@
 from flask import Flask, Response
-import threading, time, db, datetime, html
+import threading
+import time
+import db
+import datetime
+import html
 from logger import get_logger
 from feedgen.feed import FeedGenerator
 
@@ -57,7 +61,8 @@ class RSSFeed:
                 title_end = content.find('\n', title_start)
                 if title_end > 0:
                     title = content[title_start:title_end]
-        except:
+        except Exception as e:
+            logger.debug(f"Error extracting title from content: {e}")
             pass
 
         # Create a new entry
@@ -91,7 +96,7 @@ class RSSFeed:
 def rss_feed_process(queue):
     """
     Process function for the RSS feed.
-    
+
     Args:
         queue (Queue): The queue to get new items from
     """

@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-import db, core, os, re
+import db
+import core
+import os
+import re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from logger import get_logger
@@ -49,7 +52,8 @@ def index():
         try:
             last_timestamp = db.get_last_timestamp(query[0])
             last_found_item = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        except:
+        except Exception as e:
+            logger.debug(f"Error getting last timestamp for query {query[0]}: {e}")
             last_found_item = "Never"
 
         formatted_queries.append({
@@ -123,7 +127,8 @@ def queries():
         try:
             last_timestamp = db.get_last_timestamp(query[0])
             last_found_item = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        except:
+        except Exception as e:
+            logger.debug(f"Error getting last timestamp for query {query[0]}: {e}")
             last_found_item = "Never"
 
         formatted_queries.append({
