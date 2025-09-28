@@ -316,8 +316,8 @@ def clear_item_queue(items_queue, new_items_queue):
             # If already in db, pass
             last_query_timestamp = db.get_last_timestamp(query_id)
             if (
-                    last_query_timestamp is not None
-                    and last_query_timestamp >= item.raw_timestamp
+                last_query_timestamp is not None
+                and last_query_timestamp >= item.raw_timestamp
             ):
                 pass
             # In case of multiple queries, we need to check if the item is already in the db
@@ -328,7 +328,7 @@ def clear_item_queue(items_queue, new_items_queue):
             # If there's an allowlist and
             # If the user's country is not in the allowlist, we just update the timestamp
             elif db.get_allowlist() != 0 and (
-                    get_user_country(item.raw_data["user"]["id"])
+                get_user_country(item.raw_data["user"]["id"])
             ) not in (db.get_allowlist() + ["XX"]):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass

@@ -75,7 +75,7 @@ class LeRobot:
 
     # Add a query to the db
     async def add_query(
-            self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
             query = context.args
@@ -111,7 +111,7 @@ class LeRobot:
 
     # Remove a query from the db
     async def remove_query(
-            self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
             number = context.args
@@ -159,7 +159,7 @@ class LeRobot:
     ### ALLOWLIST ###
 
     async def clear_allowlist(
-            self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
             db.clear_allowlist()
@@ -176,7 +176,7 @@ class LeRobot:
                 logger.error(f"Error sending error message: {str(e2)}")
 
     async def add_country(
-            self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
             country = context.args
@@ -200,7 +200,7 @@ class LeRobot:
                 logger.error(f"Error sending error message: {str(e2)}")
 
     async def remove_country(
-            self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
             country = context.args
@@ -226,7 +226,7 @@ class LeRobot:
                 logger.error(f"Error sending error message: {str(e2)}")
 
     async def allowlist(
-            self, update: Update, context: ContextTypes.DEFAULT_TYPE
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         try:
             if db.get_allowlist() == 0:

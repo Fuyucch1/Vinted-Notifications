@@ -19,12 +19,12 @@ class Items:
     """
 
     def search(
-            self,
-            url: str,
-            nbr_items: int = 20,
-            page: int = 1,
-            time: Optional[int] = None,
-            json: bool = False,
+        self,
+        url: str,
+        nbr_items: int = 20,
+        page: int = 1,
+        time: Optional[int] = None,
+        json: bool = False,
     ) -> List[Item]:
         """
         Retrieve items from a given search URL on Vinted.
@@ -74,7 +74,7 @@ class Items:
             raise err
 
     def parse_url(
-            self, url: str, nbr_items: int = 20, page: int = 1, time: Optional[int] = None
+        self, url: str, nbr_items: int = 20, page: int = 1, time: Optional[int] = None
     ) -> Dict:
         """
         Parse a Vinted search URL to get parameters for the API call.

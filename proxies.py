@@ -58,7 +58,7 @@ def check_proxies_parallel(proxies_list: List[str]) -> List[str]:
 
     # Use ThreadPoolExecutor to check proxies in parallel
     with concurrent.futures.ThreadPoolExecutor(
-            max_workers=MAX_PROXY_WORKERS
+        max_workers=MAX_PROXY_WORKERS
     ) as executor:
         # Submit all proxy checking tasks
         future_to_proxy = {
@@ -109,9 +109,9 @@ def get_random_proxy() -> Optional[str]:
 
     # Check if we need to recheck proxies (if more than PROXY_RECHECK_INTERVAL seconds have passed)
     if (
-            _PROXY_CACHE_INITIALIZED
-            and last_proxy_check_time > 0
-            and current_time - last_proxy_check_time > PROXY_RECHECK_INTERVAL
+        _PROXY_CACHE_INITIALIZED
+        and last_proxy_check_time > 0
+        and current_time - last_proxy_check_time > PROXY_RECHECK_INTERVAL
     ):
         # Reset cache to force recheck
         _PROXY_CACHE_INITIALIZED = False
