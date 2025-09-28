@@ -9,7 +9,6 @@ VALUES ('message_template', '🆕 Title : {title}
 💶 Price : {price}
 🛍️ Brand : {brand}
 <a href="{image}">&#8205;</a>'),
-       ('web_ui_port', '8000'),
        ('user_agents', '[
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/536.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.14 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",

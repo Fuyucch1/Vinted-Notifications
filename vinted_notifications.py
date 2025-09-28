@@ -263,9 +263,6 @@ if __name__ == "__main__":
     # This process will provide a web interface to control the application
     web_ui_process_instance = multiprocessing.Process(target=web_ui_process)
     web_ui_process_instance.start()
-    # Get web UI port from the database
-    web_ui_port = db.get_parameter("web_ui_port")
-    logger.info(f"Web UI started on port {web_ui_port}")
 
     try:
         # Wait for processes to finish (which they won't unless interrupted)
