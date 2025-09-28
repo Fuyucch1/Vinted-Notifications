@@ -2,7 +2,7 @@ version: '3'
 
 services:
   vinted-notifications:
-    image: fuyucch1/vinted-notifications:1.0.4
+    image: fuyucch1/vinted-notifications:latest
     ports:
       - "8000:8000"  # Web UI port
       - "8080:8080"  # RSS feed port (if enabled)
