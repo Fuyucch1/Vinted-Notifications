@@ -110,7 +110,6 @@ UI.
 You can customize the notification message format:
 
 ```python
-# In configuration_values.py
 MESSAGE = '''\
 🆕 Title: {title}
 💶 Price: {price}

@@ -15,7 +15,7 @@ def create_or_update_sqlite_db(db_path):
         conn = get_db_connection()
         cursor = conn.cursor()
         # Using the sql script
-        with open(db_path, "r") as sql_file:
+        with open(db_path, "r", encoding="utf-8") as sql_file:
             sql_script = sql_file.read()
             cursor.executescript(sql_script)
 
@@ -308,7 +308,6 @@ def get_all_parameters():
     finally:
         if conn:
             conn.close()
-
 
 def get_items(limit=50, query=None):
     conn = None

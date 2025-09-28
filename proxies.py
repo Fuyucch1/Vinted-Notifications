@@ -2,7 +2,6 @@ import random
 import requests
 import time
 from requests.exceptions import RequestException
-import configuration_values
 import concurrent.futures
 from typing import List, Optional
 from logger import get_logger
@@ -193,10 +192,22 @@ def check_proxy(proxy: str) -> bool:
         # Create a new session for testing (ensures thread safety)
         session = requests.Session()
 
+        # Import db here to avoid circular imports
+        import db
+        import json
+
+        # Get user agents and default headers from the database
+        user_agents_json = db.get_parameter('user_agents')
+        default_headers_json = db.get_parameter('default_headers')
+
+        # Parse JSON strings
+        user_agents = json.loads(user_agents_json) if user_agents_json else []
+        default_headers = json.loads(default_headers_json) if default_headers_json else {}
+
         # Set random user agent and default headers
         headers = {
-            "User-Agent": random.choice(configuration_values.USER_AGENTS),
-            **configuration_values.DEFAULT_HEADERS
+            "User-Agent": random.choice(user_agents) if user_agents else "Mozilla/5.0",
+            **default_headers
         }
         session.headers.update(headers)
 

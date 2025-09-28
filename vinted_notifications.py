@@ -1,4 +1,4 @@
-import multiprocessing, time, core, os, db, configuration_values
+import multiprocessing, time, core, os, db
 from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
 from rss_feed_plugin.rss_feed import rss_feed_process
@@ -187,6 +187,7 @@ if __name__ == "__main__":
             else:
                 break
 
+
     # Plugin checker
     plugin_checker()
 
@@ -224,7 +225,9 @@ if __name__ == "__main__":
     # This process will provide a web interface to control the application
     web_ui_process_instance = multiprocessing.Process(target=web_ui_process)
     web_ui_process_instance.start()
-    logger.info(f"Web UI started on port {configuration_values.WEB_UI_PORT}")
+    # Get web UI port from the database
+    web_ui_port = db.get_parameter('web_ui_port')
+    logger.info(f"Web UI started on port {web_ui_port}")
 
 
     try:

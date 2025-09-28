@@ -1,4 +1,4 @@
-import db, configuration_values, requests
+import db, requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
@@ -311,7 +311,8 @@ def clear_item_queue(items_queue, new_items_queue):
                 pass
             else:
                 # We create the message
-                content = configuration_values.MESSAGE.format(
+                message_template = db.get_parameter('message_template')
+                content = message_template.format(
                     title=item.title,
                     price=str(item.price) + " " + item.currency,
                     brand=item.brand_title,

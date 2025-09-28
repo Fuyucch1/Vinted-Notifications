@@ -1,10 +1,5 @@
-import requests
-import random
+import json, proxies, sys, os, db, random, requests
 from requests.exceptions import HTTPError
-import configuration_values
-import proxies
-import sys
-import os
 
 # Add the parent directory to sys.path to import logger
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,10 +28,22 @@ class Requester:
             debug (bool, optional): Whether to print debug messages. Defaults to False.
         """
 
+        # Add the parent directory to sys.path to import db
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        import db
+
+        # Get user agents and default headers from the database
+        user_agents_json = db.get_parameter('user_agents')
+        default_headers_json = db.get_parameter('default_headers')
+
+        # Parse JSON strings
+        user_agents = json.loads(user_agents_json) if user_agents_json else []
+        default_headers = json.loads(default_headers_json) if default_headers_json else {}
+
         self.HEADER = {
-            # Grabs a user agent from the configuration values
-            "User-Agent": random.choice(configuration_values.USER_AGENTS),
-            **configuration_values.DEFAULT_HEADERS,
+            # Grabs a user agent from the database
+            "User-Agent": random.choice(user_agents) if user_agents else "Mozilla/5.0",
+            **(default_headers or {}),
             "Host": "www.vinted.fr",
         }
         self.VINTED_AUTH_URL = "https://www.vinted.fr/"
@@ -58,9 +65,17 @@ class Requester:
             locale (str): The locale domain to use (e.g., 'www.vinted.fr', 'www.vinted.de')
         """
         self.VINTED_AUTH_URL = f"https://{locale}/"
+        # Get user agents and default headers from the database
+        user_agents_json = db.get_parameter('user_agents')
+        default_headers_json = db.get_parameter('default_headers')
+
+        # Parse JSON strings
+        user_agents = json.loads(user_agents_json) if user_agents_json else []
+        default_headers = json.loads(default_headers_json) if default_headers_json else {}
+
         self.HEADER = {
-            "User-Agent": random.choice(configuration_values.USER_AGENTS),
-            **configuration_values.DEFAULT_HEADERS,
+            "User-Agent": random.choice(user_agents) if user_agents else "Mozilla/5.0",
+            **(default_headers or {}),
             "Host": f"{locale}",
         }
         self.session.headers.update(self.HEADER)

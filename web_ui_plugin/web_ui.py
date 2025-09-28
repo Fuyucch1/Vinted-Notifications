@@ -3,7 +3,6 @@ import db, core, os, re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from logger import get_logger
-import configuration_values
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -285,6 +284,11 @@ def update_config():
     db.set_parameter('proxy_list', request.form.get('proxy_list', ''))
     db.set_parameter('proxy_list_link', request.form.get('proxy_list_link', ''))
 
+    # Update Advanced parameters
+    db.set_parameter('message_template', request.form.get('message_template', ''))
+    db.set_parameter('user_agents', request.form.get('user_agents', '[]'))
+    db.set_parameter('default_headers', request.form.get('default_headers', '{}'))
+
     # Reset proxy cache to force refresh on next use
     db.set_parameter('last_proxy_check_time', "1")
     logger.info("Proxy settings updated, cache reset")
@@ -478,7 +482,7 @@ def api_logs():
 def web_ui_process():
     logger.info("Web UI process started")
     try:
-        app.run(host='0.0.0.0', port=configuration_values.WEB_UI_PORT, debug=False)
+        app.run(host='0.0.0.0', port=8000, debug=False)
     except (KeyboardInterrupt, SystemExit):
         logger.info("Web UI process stopped")
     except Exception as e:
