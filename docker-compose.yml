@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  vinted-notifications:
+    build: .
+    ports:
+      - "8000:8000"  # Web UI port
+      - "8080:8080"  # RSS feed port (if enabled)
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
