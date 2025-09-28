@@ -286,6 +286,7 @@ def clear_item_queue(items_queue, new_items_queue):
     """
     if not items_queue.empty():
         data, query_id = items_queue.get()
+        banwords_str = db.get_parameter("banwords")
         for item in reversed(data):
 
             # If already in db, pass
@@ -303,6 +304,11 @@ def clear_item_queue(items_queue, new_items_queue):
                     db.get_allowlist() + ["XX"]):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
+            # Check if the item title contains any banwords
+            elif banwords_str is not '' and contains_banwords(item.title, banwords_str):
+                # If it contains banwords, just update the timestamp and skip
+                db.update_last_timestamp(query_id, item.raw_timestamp)
+                pass
             else:
                 # We create the message
                 content = configuration_values.MESSAGE.format(
@@ -317,6 +323,33 @@ def clear_item_queue(items_queue, new_items_queue):
                 # Add the item to the db
                 db.add_item_to_db(id=item.id, timestamp=item.raw_timestamp, price=item.price, title=item.title,
                                   photo_url=item.photo, query_id=query_id, currency=item.currency)
+
+
+def contains_banwords(title, banwords_str):
+    """
+    Check if a title contains any banwords.
+
+    Args:
+        title (str): The title to check
+        banwords_str (str) : List of banwords separated by pipe character
+    Returns:
+        bool: True if the title contains any banwords, False otherwise
+    """
+
+    # Split the banwords string into a list using pipe as delimiter
+    banwords = [word.strip().lower() for word in banwords_str.split('|||') if word.strip()]
+
+    # If the list is empty, return False
+    if not banwords:
+        return False
+
+    # Check if any banword is in the title (case-insensitive)
+    title_lower = title.lower()
+    for word in banwords:
+        if word in title_lower:
+            return True
+
+    return False
 
 
 def check_version():
