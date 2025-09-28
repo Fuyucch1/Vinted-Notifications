@@ -166,7 +166,10 @@ def plugin_checker():
 if __name__ == "__main__":
     # Starting sequence
     # Db check
-    if not os.path.exists("./vinted_notifications.db"):
+    if not os.path.exists("./data/vinted_notifications.db"):
+        logger.info("Database not found, creating a new one.")
+        # Create the folder if it doesn't exist
+        os.makedirs("./data", exist_ok=True)
         db.create_or_update_sqlite_db("initial_db.sql")
         logger.info("Database created successfully")
     else:
