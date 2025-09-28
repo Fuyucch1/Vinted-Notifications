@@ -120,6 +120,8 @@ class LeRobot:
                 return
 
             # Process the removal using the core function
+            if number[0] != "all":
+                number[0] = db.get_query_id_by_rowid(number[0])
             message, success = core.process_remove_query(number[0])
 
             if success:
@@ -307,7 +309,7 @@ class LeRobot:
                     ("hello", "Verify if bot is running"),
                     ("add_query", "Add a keyword to the bot"),
                     ("remove_query", "Remove a keyword from the bot"),
-                    ("queries", "List all keywords"),
+                    ("queries", "List all queries"),
                     ("clear_allowlist", "Clear the allowlist"),
                     ("add_country", "Add a country to the allowlist"),
                     ("remove_country", "Remove a country from the allowlist"),

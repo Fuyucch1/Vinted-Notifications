@@ -110,7 +110,7 @@ def get_formatted_query_list():
             queries_keywords.append(query_name)
 
     query_list = ("\n").join(
-        [str(i + 1) + ". " + j[0] for i, j in enumerate(queries_keywords)]
+        [str(i + 1) + ". " + j for i, j in enumerate(queries_keywords)]
     )
     return query_list
 
@@ -132,12 +132,14 @@ def process_remove_query(number):
         return "All queries removed.", True
 
     # Check if number is a valid digit
-    if not number[0].isdigit():
+    if isinstance(number, int):
+        # Remove the query from the database
+        db.remove_query_from_db(number)
+        return "Query removed.", True
+    else:
         return "Invalid number.", False
 
-    # Remove the query from the database
-    db.remove_query_from_db(number)
-    return "Query removed.", True
+
 
 
 def process_update_query(query_id, query, name):

@@ -156,23 +156,34 @@ def add_query_to_db(query, name=None):
         if conn:
             conn.close()
 
+def get_query_id_by_rowid(rowid):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        query= f"SELECT id FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={rowid}"
+        cursor.execute(query)
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        return None
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
 
 def remove_query_from_db(query_number):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        # Get the query and its ID based on the row number
-        query_string = f"SELECT id, query, rowid FROM (SELECT id, query, rowid, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={query_number}"
-        cursor.execute(query_string)
-        query_result = cursor.fetchone()
-        if query_result:
-            query_id, query_text, rowid = query_result
-            # Delete items associated with this query using query_id
-            cursor.execute("DELETE FROM items WHERE query_id=?", (query_id,))
-            # Delete the query
-            cursor.execute("DELETE FROM queries WHERE ROWID=?", (rowid,))
-            conn.commit()
+        # Delete items associated with this query using query_id
+        cursor.execute("DELETE FROM items WHERE query_id=?", (query_number,))
+        # Delete the query
+        cursor.execute("DELETE FROM queries WHERE id=?", (query_number,))
+        conn.commit()
     except Exception:
         print_exc()
     finally:
