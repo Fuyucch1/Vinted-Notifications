@@ -30,14 +30,18 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/vinted-notifications
           tags: |
+            # tag from the GitHub Release, e.g. v1.2.3
             type=raw,value=${{ github.event.release.tag_name }}
-            type=raw,value=latest,enable={{is_semver}}
+            # also publish latest on every published release
+            type=raw,value=latest
+            # add a sha tag for traceability
             type=sha
           labels: |
             org.opencontainers.image.title=vinted-notifications
             org.opencontainers.image.version=${{ github.event.release.tag_name }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+      
 
       - name: Build & Push (multi-arch)
         uses: docker/build-push-action@v6
