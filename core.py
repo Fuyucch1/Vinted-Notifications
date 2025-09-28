@@ -305,7 +305,7 @@ def clear_item_queue(items_queue, new_items_queue):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
             # Check if the item title contains any banwords
-            elif banwords_str is not '' and contains_banwords(item.title, banwords_str):
+            elif banwords_str and contains_banwords(item.title, banwords_str):
                 # If it contains banwords, just update the timestamp and skip
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
@@ -331,7 +331,7 @@ def contains_banwords(title, banwords_str):
 
     Args:
         title (str): The title to check
-        banwords_str (str) : List of banwords separated by pipe character
+        banwords_str (str): List of banwords separated by 3 pipe character
     Returns:
         bool: True if the title contains any banwords, False otherwise
     """
