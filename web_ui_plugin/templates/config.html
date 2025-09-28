@@ -46,6 +46,28 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="banwords-input" class="form-label">Banwords</label>
+                                                <div class="input-group mb-2">
+                                                    <input type="text" class="form-control" id="banwords-input"
+                                                           placeholder="Enter a word to ban">
+                                                    <button class="btn btn-outline-secondary" type="button"
+                                                            id="add-banword-btn">Add
+                                                    </button>
+                                                </div>
+                                                <div id="banwords-container" class="d-flex flex-wrap gap-2 mb-2">
+                                                    <!-- Banwords will be displayed here as tags -->
+                                                </div>
+                                                <input type="hidden" id="banwords" name="banwords"
+                                                       value="{{ params.banwords }}">
+                                                <small class="form-text text-muted">Words to filter out from item
+                                                    titles. Items with these words in their titles will be
+                                                    ignored.</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -336,6 +358,72 @@
 
         // Initial check
         checkProcessStatus();
+
+        // Banwords handling
+        const banwordsInput = document.getElementById('banwords-input');
+        const addBanwordBtn = document.getElementById('add-banword-btn');
+        const banwordsContainer = document.getElementById('banwords-container');
+        const banwordsHiddenInput = document.getElementById('banwords');
+
+        // Function to create a banword tag
+        function createBanwordTag(word) {
+            if (!word.trim()) return;
+
+            // Check if the word already exists
+            const existingTags = banwordsContainer.querySelectorAll('.banword-tag');
+            for (let tag of existingTags) {
+                if (tag.dataset.word.toLowerCase() === word.toLowerCase().trim()) {
+                    return; // Word already exists, don't add it again
+                }
+            }
+
+            const tag = document.createElement('span');
+            tag.className = 'badge bg-secondary me-1 mb-1 banword-tag';
+            tag.dataset.word = word.trim();
+            tag.innerHTML = `${word.trim()} <i class="bi bi-x-circle" style="cursor: pointer;"></i>`;
+
+            // Add click event to remove the tag
+            tag.querySelector('i').addEventListener('click', function () {
+                tag.remove();
+                updateHiddenInput();
+            });
+
+            banwordsContainer.appendChild(tag);
+            updateHiddenInput();
+        }
+
+        // Function to update the hidden input with all banwords
+        function updateHiddenInput() {
+            const tags = banwordsContainer.querySelectorAll('.banword-tag');
+            const words = Array.from(tags).map(tag => tag.dataset.word);
+            banwordsHiddenInput.value = words.join('|||');
+        }
+
+        // Add banword when clicking the Add button
+        addBanwordBtn.addEventListener('click', function () {
+            createBanwordTag(banwordsInput.value);
+            banwordsInput.value = '';
+            banwordsInput.focus();
+        });
+
+        // Add banword when pressing Enter in the input field
+        banwordsInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createBanwordTag(banwordsInput.value);
+                banwordsInput.value = '';
+            }
+        });
+
+        // Initialize banwords from the hidden input
+        if (banwordsHiddenInput.value) {
+            const initialBanwords = banwordsHiddenInput.value.split('|||');
+            initialBanwords.forEach(word => {
+                if (word.trim()) {
+                    createBanwordTag(word);
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

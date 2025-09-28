@@ -66,4 +66,5 @@ VALUES ('telegram_enabled', 'False'),
        ('proxy_list', ''),
        ('proxy_list_link', ''),
        ('check_proxies', 'False'),
-       ('last_proxy_check_time', '0');
+       ('last_proxy_check_time', '0'),
+       ('banwords', '');

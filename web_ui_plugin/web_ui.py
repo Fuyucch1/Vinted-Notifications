@@ -277,6 +277,7 @@ def update_config():
     # Update System parameters
     db.set_parameter('items_per_query', request.form.get('items_per_query', '20'))
     db.set_parameter('query_refresh_delay', request.form.get('query_refresh_delay', '60'))
+    db.set_parameter('banwords', request.form.get('banwords', ''))
 
     # Update Proxy parameters
     check_proxies = 'check_proxies' in request.form
