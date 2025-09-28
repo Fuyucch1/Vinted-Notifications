@@ -12,6 +12,9 @@ COPY . .
 # Create a directory for logs
 RUN mkdir -p logs
 
+RUN useradd -u 10001 -m appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Expose the web UI port
 EXPOSE 8000
 # Expose the RSS feed port
