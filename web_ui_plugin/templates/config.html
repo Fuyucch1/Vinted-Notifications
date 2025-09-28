@@ -196,6 +196,51 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="bi bi-gear-wide-connected me-2 text-info"></i>
+                                    <h5 class="card-title mb-0">Advanced Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="message_template" class="form-label">Notification Message
+                                                    Template</label>
+                                                <textarea class="form-control" id="message_template"
+                                                          name="message_template"
+                                                          rows="6">{{ params.message_template }}</textarea>
+                                                <small class="form-text text-muted">Template for notification messages.
+                                                    Available variables: {title}, {price}, {brand}, {image}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="user_agents" class="form-label">User Agents</label>
+                                                <textarea class="form-control" id="user_agents" name="user_agents"
+                                                          rows="5">{{ params.user_agents }}</textarea>
+                                                <small class="form-text text-muted">List of user agents for HTTP
+                                                    requests (JSON format)</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="default_headers" class="form-label">Default Headers</label>
+                                                <textarea class="form-control" id="default_headers"
+                                                          name="default_headers"
+                                                          rows="3">{{ params.default_headers }}</textarea>
+                                                <small class="form-text text-muted">Default headers for HTTP requests
+                                                    (JSON format)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-md-12">
                             <button type="submit" class="btn btn-primary">Save Configuration</button>

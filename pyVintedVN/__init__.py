@@ -1,2 +1,2 @@
-from .vinted import Vinted
-from .requester import requester
+from .vinted import Vinted as Vinted
+from .requester import requester as requester

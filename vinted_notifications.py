@@ -1,4 +1,8 @@
-import multiprocessing, time, core, os, db, configuration_values
+import multiprocessing
+import time
+import core
+import os
+import db
 from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
 from rss_feed_plugin.rss_feed import rss_feed_process
@@ -13,6 +17,7 @@ rss_process = None
 scrape_process = None
 current_query_refresh_delay = None
 
+
 def scraper_process(items_queue):
     logger.info("Scrape process started")
 
@@ -21,8 +26,13 @@ def scraper_process(items_queue):
     logger.info(f"Using query refresh delay of {current_query_refresh_delay} seconds")
 
     scraper_scheduler = BackgroundScheduler()
-    scraper_scheduler.add_job(core.process_items, 'interval', seconds=current_query_refresh_delay, args=[items_queue],
-                              name="scraper")
+    scraper_scheduler.add_job(
+        core.process_items,
+        "interval",
+        seconds=current_query_refresh_delay,
+        args=[items_queue],
+        name="scraper",
+    )
     scraper_scheduler.start()
     try:
         # Keep the process running
@@ -63,9 +73,11 @@ def dispatcher_function(input_queue, rss_queue, telegram_queue):
 def telegram_bot_process(queue):
     logger.info("Telegram bot process started")
     import asyncio
+
     try:
         # Import LeRobot
         from telegram_bot_plugin.telegram_bot import LeRobot
+
         # The bot will run with app.run_polling() which is already in the module
         asyncio.run(LeRobot(queue))
     except (KeyboardInterrupt, SystemExit):
@@ -89,7 +101,9 @@ def check_refresh_delay(items_queue):
 
         # If the delay has changed, update the scheduler
         if new_delay != current_query_refresh_delay:
-            logger.info(f"Query refresh delay changed from {current_query_refresh_delay} to {new_delay} seconds")
+            logger.info(
+                f"Query refresh delay changed from {current_query_refresh_delay} to {new_delay} seconds"
+            )
 
             # Update the global variable
             current_query_refresh_delay = new_delay
@@ -97,10 +111,14 @@ def check_refresh_delay(items_queue):
             # Remove the existing job and add a new one with the updated interval
             scrape_process.terminate()
             scrape_process.join()
-            scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
+            scrape_process = multiprocessing.Process(
+                target=scraper_process, args=(items_queue,)
+            )
             scrape_process.start()
 
-            logger.info(f"Scheduler updated with new refresh delay of {new_delay} seconds")
+            logger.info(
+                f"Scheduler updated with new refresh delay of {new_delay} seconds"
+            )
     except Exception as e:
         logger.error(f"Error updating refresh delay: {e}", exc_info=True)
 
@@ -113,10 +131,10 @@ def monitor_processes(items_queue, telegram_queue, rss_queue):
 
     ### TELEGRAM ###
     # Check telegram process status
-    telegram_should_run = db.get_parameter('telegram_process_running') == 'True'
+    telegram_should_run = db.get_parameter("telegram_process_running") == "True"
     # Check if the telegram token and chat ID are set
-    telegram_token = db.get_parameter('telegram_token')
-    telegram_chat_id = db.get_parameter('telegram_chat_id')
+    telegram_token = db.get_parameter("telegram_token")
+    telegram_chat_id = db.get_parameter("telegram_chat_id")
     if not telegram_token or not telegram_chat_id:
         telegram_should_run = False
     telegram_is_running = telegram_process is not None and telegram_process.is_alive()
@@ -124,7 +142,9 @@ def monitor_processes(items_queue, telegram_queue, rss_queue):
     if telegram_should_run and not telegram_is_running:
         # Start telegram process
         logger.info("Starting telegram bot process.")
-        telegram_process = multiprocessing.Process(target=telegram_bot_process, args=(telegram_queue,))
+        telegram_process = multiprocessing.Process(
+            target=telegram_bot_process, args=(telegram_queue,)
+        )
         telegram_process.start()
     elif not telegram_should_run and telegram_is_running:
         # Stop telegram process
@@ -135,13 +155,15 @@ def monitor_processes(items_queue, telegram_queue, rss_queue):
 
     ### RSS ###
     # Check RSS process status
-    rss_should_run = db.get_parameter('rss_process_running') == 'True'
+    rss_should_run = db.get_parameter("rss_process_running") == "True"
     rss_is_running = rss_process is not None and rss_process.is_alive()
 
     if rss_should_run and not rss_is_running:
         # Start RSS process
         logger.info("Starting RSS process based on database status")
-        rss_process = multiprocessing.Process(target=rss_feed_process, args=(rss_queue,))
+        rss_process = multiprocessing.Process(
+            target=rss_feed_process, args=(rss_queue,)
+        )
         rss_process.start()
     elif not rss_should_run and rss_is_running:
         # Stop RSS process
@@ -153,34 +175,39 @@ def monitor_processes(items_queue, telegram_queue, rss_queue):
 
 def plugin_checker():
     # Get telegram and rss enable status
-    telegram_enabled = db.get_parameter('telegram_enabled')
+    telegram_enabled = db.get_parameter("telegram_enabled")
     logger.info("Telegram enabled: {}".format(telegram_enabled))
-    rss_enabled = db.get_parameter('rss_enabled')
+    rss_enabled = db.get_parameter("rss_enabled")
     logger.info("RSS enabled: {}".format(rss_enabled))
 
     # Reset process status at startup
-    db.set_parameter('telegram_process_running', telegram_enabled)
-    db.set_parameter('rss_process_running', rss_enabled)
+    db.set_parameter("telegram_process_running", telegram_enabled)
+    db.set_parameter("rss_process_running", rss_enabled)
 
 
 if __name__ == "__main__":
     # Starting sequence
     # Db check
-    if not os.path.exists("./vinted_notifications.db"):
+    if not os.path.exists("./data/vinted_notifications.db"):
+        logger.info("Database not found, creating a new one.")
+        # Create the folder if it doesn't exist
+        os.makedirs("./data", exist_ok=True)
         db.create_or_update_sqlite_db("initial_db.sql")
         logger.info("Database created successfully")
     else:
-        current_version = db.get_parameter('version')
+        current_version = db.get_parameter("version")
         # Check if there is a file that starts with the current version in the migrations folder. We keep comparing until
         # we find no migration files that start with the current version.
-        migration_files = [f for f in os.listdir('migrations')]
+        migration_files = [f for f in os.listdir("migrations")]
         while True:
-            migration_file = next((f for f in migration_files if f.startswith(current_version)), None)
+            migration_file = next(
+                (f for f in migration_files if f.startswith(current_version)), None
+            )
             if migration_file:
                 logger.info(f"Running migration: {migration_file}")
                 db.create_or_update_sqlite_db("./migrations/" + migration_file)
                 # Increment the version
-                current_version = db.get_parameter('version')
+                current_version = db.get_parameter("version")
             else:
                 break
 
@@ -196,33 +223,46 @@ if __name__ == "__main__":
     # 1. Create and start the scrape process
     # This process will scrape items and put them in the items_queue
     current_query_refresh_delay = int(db.get_parameter("query_refresh_delay"))
-    scrape_process = multiprocessing.Process(target=scraper_process, args=(items_queue,))
+    scrape_process = multiprocessing.Process(
+        target=scraper_process, args=(items_queue,)
+    )
     scrape_process.start()
 
     # 2. Create the item extractor process
     # This process will extract items from the items_queue and put them in the new_items_queue
-    item_extractor_process = multiprocessing.Process(target=item_extractor, args=(items_queue, new_items_queue))
+    item_extractor_process = multiprocessing.Process(
+        target=item_extractor, args=(items_queue, new_items_queue)
+    )
     item_extractor_process.start()
 
     # 3. Create the dispatcher process
     # This process will handle the new items and send them to the enabled services
-    dispatcher_process = multiprocessing.Process(target=dispatcher_function,
-                                                 args=(new_items_queue, rss_queue, telegram_queue,))
+    dispatcher_process = multiprocessing.Process(
+        target=dispatcher_function,
+        args=(
+            new_items_queue,
+            rss_queue,
+            telegram_queue,
+        ),
+    )
     dispatcher_process.start()
 
     # 4. Set up a scheduler to monitor processes
     # This will check the process status in the database and start/stop processes as needed
     monitor_scheduler = BackgroundScheduler()
-    monitor_scheduler.add_job(monitor_processes, 'interval', seconds=5, args=[items_queue, telegram_queue, rss_queue],
-                              name="process_monitor")
+    monitor_scheduler.add_job(
+        monitor_processes,
+        "interval",
+        seconds=5,
+        args=[items_queue, telegram_queue, rss_queue],
+        name="process_monitor",
+    )
     monitor_scheduler.start()
 
     # 5. Create and start the Web UI process
     # This process will provide a web interface to control the application
     web_ui_process_instance = multiprocessing.Process(target=web_ui_process)
     web_ui_process_instance.start()
-    logger.info(f"Web UI started on port {configuration_values.WEB_UI_PORT}")
-
 
     try:
         # Wait for processes to finish (which they won't unless interrupted)
@@ -255,11 +295,11 @@ if __name__ == "__main__":
         if telegram_process and telegram_process.is_alive():
             telegram_process.terminate()
             # Set the process status in the database
-            db.set_parameter('telegram_process_running', 'False')
+            db.set_parameter("telegram_process_running", "False")
         if rss_process and rss_process.is_alive():
             rss_process.terminate()
             # Set the process status in the database
-            db.set_parameter('rss_process_running', 'False')
+            db.set_parameter("rss_process_running", "False")
 
         # Wait for all processes to terminate
         scrape_process.join()
