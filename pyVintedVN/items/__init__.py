@@ -1,1 +1,1 @@
-from pyVintedVN.items.items import Items
+from pyVintedVN.items.items import Items as Items

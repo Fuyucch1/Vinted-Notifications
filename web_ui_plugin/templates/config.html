@@ -46,6 +46,28 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="banwords-input" class="form-label">Banwords</label>
+                                                <div class="input-group mb-2">
+                                                    <input type="text" class="form-control" id="banwords-input"
+                                                           placeholder="Enter a word to ban">
+                                                    <button class="btn btn-outline-secondary" type="button"
+                                                            id="add-banword-btn">Add
+                                                    </button>
+                                                </div>
+                                                <div id="banwords-container" class="d-flex flex-wrap gap-2 mb-2">
+                                                    <!-- Banwords will be displayed here as tags -->
+                                                </div>
+                                                <input type="hidden" id="banwords" name="banwords"
+                                                       value="{{ params.banwords }}">
+                                                <small class="form-text text-muted">Words to filter out from item
+                                                    titles. Items with these words in their titles will be
+                                                    ignored.</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -167,6 +189,51 @@
                                                        name="proxy_list_link" value="{{ params.proxy_list_link }}">
                                                 <small class="form-text text-muted">URL to fetch proxies from (one proxy
                                                     per line)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="bi bi-gear-wide-connected me-2 text-info"></i>
+                                    <h5 class="card-title mb-0">Advanced Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="message_template" class="form-label">Notification Message
+                                                    Template</label>
+                                                <textarea class="form-control" id="message_template"
+                                                          name="message_template"
+                                                          rows="6">{{ params.message_template }}</textarea>
+                                                <small class="form-text text-muted">Template for notification messages.
+                                                    Available variables: {title}, {price}, {brand}, {image}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="user_agents" class="form-label">User Agents</label>
+                                                <textarea class="form-control" id="user_agents" name="user_agents"
+                                                          rows="5">{{ params.user_agents }}</textarea>
+                                                <small class="form-text text-muted">List of user agents for HTTP
+                                                    requests (JSON format)</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="default_headers" class="form-label">Default Headers</label>
+                                                <textarea class="form-control" id="default_headers"
+                                                          name="default_headers"
+                                                          rows="3">{{ params.default_headers }}</textarea>
+                                                <small class="form-text text-muted">Default headers for HTTP requests
+                                                    (JSON format)</small>
                                             </div>
                                         </div>
                                     </div>
@@ -336,6 +403,72 @@
 
         // Initial check
         checkProcessStatus();
+
+        // Banwords handling
+        const banwordsInput = document.getElementById('banwords-input');
+        const addBanwordBtn = document.getElementById('add-banword-btn');
+        const banwordsContainer = document.getElementById('banwords-container');
+        const banwordsHiddenInput = document.getElementById('banwords');
+
+        // Function to create a banword tag
+        function createBanwordTag(word) {
+            if (!word.trim()) return;
+
+            // Check if the word already exists
+            const existingTags = banwordsContainer.querySelectorAll('.banword-tag');
+            for (let tag of existingTags) {
+                if (tag.dataset.word.toLowerCase() === word.toLowerCase().trim()) {
+                    return; // Word already exists, don't add it again
+                }
+            }
+
+            const tag = document.createElement('span');
+            tag.className = 'badge bg-secondary me-1 mb-1 banword-tag';
+            tag.dataset.word = word.trim();
+            tag.innerHTML = `${word.trim()} <i class="bi bi-x-circle" style="cursor: pointer;"></i>`;
+
+            // Add click event to remove the tag
+            tag.querySelector('i').addEventListener('click', function () {
+                tag.remove();
+                updateHiddenInput();
+            });
+
+            banwordsContainer.appendChild(tag);
+            updateHiddenInput();
+        }
+
+        // Function to update the hidden input with all banwords
+        function updateHiddenInput() {
+            const tags = banwordsContainer.querySelectorAll('.banword-tag');
+            const words = Array.from(tags).map(tag => tag.dataset.word);
+            banwordsHiddenInput.value = words.join('|||');
+        }
+
+        // Add banword when clicking the Add button
+        addBanwordBtn.addEventListener('click', function () {
+            createBanwordTag(banwordsInput.value);
+            banwordsInput.value = '';
+            banwordsInput.focus();
+        });
+
+        // Add banword when pressing Enter in the input field
+        banwordsInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createBanwordTag(banwordsInput.value);
+                banwordsInput.value = '';
+            }
+        });
+
+        // Initialize banwords from the hidden input
+        if (banwordsHiddenInput.value) {
+            const initialBanwords = banwordsHiddenInput.value.split('|||');
+            initialBanwords.forEach(word => {
+                if (word.trim()) {
+                    createBanwordTag(word);
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

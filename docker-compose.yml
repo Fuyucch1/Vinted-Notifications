@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  vinted-notifications:
+    image: fuyucch1/vinted-notifications:latest
+    pull_policy: always
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    volumes:
+      - VN_data:/app/data
+      - VN_logs:/app/logs
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+
+volumes:
+  VN_data:
+  VN_logs:
