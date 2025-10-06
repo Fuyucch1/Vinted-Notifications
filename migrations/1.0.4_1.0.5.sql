@@ -1,7 +1,7 @@
 BEGIN TRANSACTION;
 
 -- Add banwords parameter
-INSERT INTO parameters (key, value)
+INSERT OR IGNORE INTO parameters (key, value)
 VALUES ('banwords', '');
 
 INSERT OR IGNORE INTO parameters (key, value)
