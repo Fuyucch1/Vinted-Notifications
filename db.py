@@ -465,6 +465,7 @@ def get_items_per_day():
 
 # User management functions
 
+
 def hash_password(password):
     """
     Hash a password using SHA-256
@@ -501,7 +502,7 @@ def create_user(username, password, is_admin=False):
         # Insert the user
         cursor.execute(
             "INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)",
-            (username, password_hash, 1 if is_admin else 0)
+            (username, password_hash, 1 if is_admin else 0),
         )
         conn.commit()
         return True
@@ -535,7 +536,7 @@ def authenticate_user(username, password):
         # Check if the user exists and the password is correct
         cursor.execute(
             "SELECT id FROM users WHERE username = ? AND password_hash = ?",
-            (username, password_hash)
+            (username, password_hash),
         )
         result = cursor.fetchone()
 
@@ -618,13 +619,13 @@ def create_reset_token(username):
 
         # Generate a token
         token = secrets.token_urlsafe(32)
-        # Set expiration to 1 hour from now
-        expiration = int(time.time()) + 3600
+        # Set expiration to 24 hours from now
+        expiration = int(time.time()) + 86400
 
         # Update the user with the token
         cursor.execute(
             "UPDATE users SET reset_token = ?, reset_token_exp = ? WHERE username = ?",
-            (token, expiration, username)
+            (token, expiration, username),
         )
         conn.commit()
 
@@ -658,7 +659,7 @@ def verify_reset_token(token):
         # Check if the token exists and is not expired
         cursor.execute(
             "SELECT username FROM users WHERE reset_token = ? AND reset_token_exp > ?",
-            (token, current_time)
+            (token, current_time),
         )
         result = cursor.fetchone()
 
@@ -699,11 +700,76 @@ def reset_password(token, new_password):
         # Update the user's password and clear the token
         cursor.execute(
             "UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_exp = NULL WHERE username = ?",
-            (password_hash, username)
+            (password_hash, username),
         )
         conn.commit()
 
         return True
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_all_users():
+    """
+    Get all users from the database
+
+    Returns:
+        list: A list of tuples containing user information (id, username, is_admin, created_at)
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, username, is_admin, created_at FROM users ORDER BY username"
+        )
+        return cursor.fetchall()
+    except Exception:
+        print_exc()
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+
+def delete_user(user_id):
+    """
+    Delete a user from the database
+
+    Args:
+        user_id (int): The user ID to delete
+
+    Returns:
+        bool: True if the user was deleted successfully, False otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Check if this is the last admin user
+        cursor.execute("SELECT COUNT(*) FROM users WHERE is_admin = 1")
+        admin_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+        user_result = cursor.fetchone()
+
+        if not user_result:
+            return False
+
+        is_admin = bool(user_result[0])
+
+        # Don't allow deleting the last admin user
+        if is_admin and admin_count <= 1:
+            return False
+
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        return cursor.rowcount > 0
     except Exception:
         print_exc()
         return False

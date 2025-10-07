@@ -1,8 +1,18 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    jsonify,
+    session,
+)
 import db
 import core
 import os
 import re
+import secrets
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from logger import get_logger
@@ -23,14 +33,16 @@ app = Flask(
 # Secret key for session management
 app.secret_key = os.urandom(24)
 
+
 # Login required decorator
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please log in to access this page', 'warning')
-            return redirect(url_for('login', next=request.url))
+        if "user_id" not in session:
+            flash("Please log in to access this page", "warning")
+            return redirect(url_for("login", next=request.url))
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -53,15 +65,15 @@ def inject_current_year():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     # If user is already logged in, redirect to index
-    if 'user_id' in session:
-        return redirect(url_for('index'))
+    if "user_id" in session:
+        return redirect(url_for("index"))
 
     # Check if there are any users in the database
     user_count = db.get_user_count()
 
     # If no users, redirect to first-run setup
     if user_count == 0:
-        return redirect(url_for('first_run'))
+        return redirect(url_for("first_run"))
 
     # Handle login form submission
     if request.method == "POST":
@@ -77,14 +89,14 @@ def login():
 
         if user_id:
             # Set session variables
-            session['user_id'] = user_id
-            session['username'] = username
+            session["user_id"] = user_id
+            session["username"] = username
 
             # Redirect to next page or index
-            next_page = request.args.get('next')
-            if next_page and next_page.startswith('/'):
+            next_page = request.args.get("next")
+            if next_page and next_page.startswith("/"):
                 return redirect(next_page)
-            return redirect(url_for('index'))
+            return redirect(url_for("index"))
         else:
             flash("Invalid username or password", "error")
 
@@ -96,7 +108,7 @@ def logout():
     # Clear session
     session.clear()
     flash("You have been logged out", "success")
-    return redirect(url_for('login'))
+    return redirect(url_for("login"))
 
 
 @app.route("/first-run", methods=["GET", "POST"])
@@ -106,7 +118,7 @@ def first_run():
 
     if user_count > 0:
         flash("User setup has already been completed", "warning")
-        return redirect(url_for('login'))
+        return redirect(url_for("login"))
 
     # Handle form submission
     if request.method == "POST":
@@ -143,7 +155,7 @@ def first_run():
         # Create user as admin (first user)
         if db.create_user(username, password, is_admin=True):
             flash("Admin user created successfully. Please log in.", "success")
-            return redirect(url_for('login'))
+            return redirect(url_for("login"))
         else:
             flash("Error creating user", "error")
 
@@ -153,8 +165,8 @@ def first_run():
 @app.route("/reset-password", methods=["GET", "POST"])
 def reset_password_request():
     # If user is already logged in, redirect to index
-    if 'user_id' in session:
-        return redirect(url_for('index'))
+    if "user_id" in session:
+        return redirect(url_for("index"))
 
     # Handle form submission
     if request.method == "POST":
@@ -169,11 +181,14 @@ def reset_password_request():
 
         if token:
             # Log the reset link (in a real app, this would be sent via email)
-            reset_url = url_for('reset_password_confirm', token=token, _external=True)
+            reset_url = url_for("reset_password_confirm", token=token, _external=True)
             logger.info(f"Password reset link for {username}: {reset_url}")
 
-            flash("A password reset link has been generated. Please check the application logs.", "success")
-            return redirect(url_for('login'))
+            flash(
+                "A password reset link has been generated. Please check the application logs.",
+                "success",
+            )
+            return redirect(url_for("login"))
         else:
             flash("Username not found", "error")
 
@@ -183,15 +198,15 @@ def reset_password_request():
 @app.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password_confirm(token):
     # If user is already logged in, redirect to index
-    if 'user_id' in session:
-        return redirect(url_for('index'))
+    if "user_id" in session:
+        return redirect(url_for("index"))
 
     # Verify token
     username = db.verify_reset_token(token)
 
     if not username:
         flash("Invalid or expired reset token", "error")
-        return redirect(url_for('reset_password_request'))
+        return redirect(url_for("reset_password_request"))
 
     # Handle form submission
     if request.method == "POST":
@@ -226,8 +241,11 @@ def reset_password_confirm(token):
 
         # Reset password
         if db.reset_password(token, password):
-            flash("Password reset successfully. Please log in with your new password.", "success")
-            return redirect(url_for('login'))
+            flash(
+                "Password reset successfully. Please log in with your new password.",
+                "success",
+            )
+            return redirect(url_for("login"))
         else:
             flash("Error resetting password", "error")
 
@@ -496,11 +514,48 @@ def items():
     )
 
 
+def format_users(users):
+    """
+    Format user data for display in templates
+
+    Args:
+        users (list): List of user tuples from the database
+
+    Returns:
+        list: Formatted user dictionaries
+    """
+    formatted_users = []
+    for user in users:
+        # Convert timestamp to readable date
+        created_at = (
+            datetime.fromtimestamp(user[3]).strftime("%Y-%m-%d %H:%M:%S")
+            if user[3]
+            else "Unknown"
+        )
+        formatted_users.append(
+            {
+                "id": user[0],
+                "username": user[1],
+                "is_admin": bool(user[2]),
+                "created_at": created_at,
+            }
+        )
+    return formatted_users
+
+
 @app.route("/config")
 @login_required
 def config():
     params = db.get_all_parameters()
     return render_template("config.html", params=params)
+
+
+@app.route("/users")
+@login_required
+def users():
+    # Get users for the user management section
+    users = format_users(db.get_all_users())
+    return render_template("users.html", users=users)
 
 
 @app.route("/update_config", methods=["POST"])
@@ -675,6 +730,146 @@ def clear_allowlist():
 @login_required
 def logs():
     return render_template("logs.html")
+
+
+@app.route("/add_user", methods=["POST"])
+@login_required
+def add_user():
+    # Check if the current user is an admin
+    if not db.is_user_admin(session.get("user_id")):
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(
+                {"status": "error", "message": "You don't have permission to add users"}
+            )
+        else:
+            flash("You don't have permission to add users", "error")
+            return redirect(url_for("users"))
+
+    username = request.form.get("username", "").strip()
+    is_admin = "is_admin" in request.form
+
+    if not username:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"status": "error", "message": "Username is required"})
+        else:
+            flash("Username is required", "error")
+            return redirect(url_for("config"))
+
+    # Generate a random password
+    random_password = secrets.token_urlsafe(12)
+
+    # Create user with random password
+    if db.create_user(username, random_password, is_admin=is_admin):
+        # Generate reset token for the new user
+        token = db.create_reset_token(username)
+        if token:
+            # Create reset URL
+            reset_url = url_for("reset_password_confirm", token=token, _external=True)
+            logger.info(f"Password setup link for new user {username}: {reset_url}")
+
+            # Check if this is an AJAX request
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": f"User {username} created successfully.",
+                        "reset_url": reset_url,
+                    }
+                )
+            else:
+                flash(
+                    f"User {username} created successfully. A password setup link has been generated.",
+                    "success",
+                )
+                # Return both a success message and the reset URL
+                return render_template(
+                    "users.html",
+                    users=format_users(db.get_all_users()),
+                    show_reset_modal=True,
+                    reset_url=reset_url,
+                    new_username=username,
+                )
+        else:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify(
+                    {
+                        "status": "warning",
+                        "message": f"User {username} created but failed to generate password setup link.",
+                    }
+                )
+            else:
+                flash(
+                    f"User {username} created but failed to generate password setup link.",
+                    "warning",
+                )
+    else:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": f"Failed to create user {username}. Username may already exist.",
+                }
+            )
+        else:
+            flash(
+                f"Failed to create user {username}. Username may already exist.",
+                "error",
+            )
+
+    return redirect(url_for("users"))
+
+
+@app.route("/delete_user/<int:user_id>", methods=["POST"])
+@login_required
+def delete_user(user_id):
+    # Check if the current user is an admin
+    if not db.is_user_admin(session.get("user_id")):
+        flash("You don't have permission to delete users", "error")
+        return redirect(url_for("users"))
+
+    # Don't allow users to delete themselves
+    if user_id == session.get("user_id"):
+        flash("You cannot delete your own account", "error")
+        return redirect(url_for("users"))
+
+    if db.delete_user(user_id):
+        flash("User deleted successfully", "success")
+    else:
+        flash("Failed to delete user. Cannot delete the last admin user.", "error")
+
+    return redirect(url_for("users"))
+
+
+@app.route("/admin_reset_password", methods=["POST"])
+@login_required
+def admin_reset_password():
+    # Check if the current user is an admin
+    if not db.is_user_admin(session.get("user_id")):
+        flash("You don't have permission to reset passwords", "error")
+        return redirect(url_for("users"))
+
+    username = request.form.get("username")
+
+    if not username:
+        flash("Username is required", "error")
+        return redirect(url_for("users"))
+
+    # Create reset token
+    token = db.create_reset_token(username)
+
+    if token:
+        # Log the reset link
+        reset_url = url_for("reset_password_confirm", token=token, _external=True)
+        logger.info(f"Password reset link for {username}: {reset_url}")
+
+        flash(
+            f"Password reset link for {username} has been generated and logged.",
+            "success",
+        )
+    else:
+        flash(f"Failed to generate password reset link for {username}.", "error")
+
+    return redirect(url_for("users"))
 
 
 @app.route("/api/logs")

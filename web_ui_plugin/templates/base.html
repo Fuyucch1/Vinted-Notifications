@@ -211,6 +211,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/users' %}active{% endif %}" href="/users">
+                            <i class="bi bi-people me-2"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.path == '/logs' %}active{% endif %}" href="/logs">
                             <i class="bi bi-journal-text me-2"></i> Logs
                         </a>
