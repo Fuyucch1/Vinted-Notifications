@@ -1,5 +1,8 @@
 import sqlite3
 from traceback import print_exc
+import hashlib
+import secrets
+import time
 
 DB_PATH = "./data/vinted_notifications.db"
 
@@ -455,6 +458,255 @@ def get_items_per_day():
     except Exception:
         print_exc()
         return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+# User management functions
+
+def hash_password(password):
+    """
+    Hash a password using SHA-256
+
+    Args:
+        password (str): The password to hash
+
+    Returns:
+        str: The hashed password
+    """
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def create_user(username, password, is_admin=False):
+    """
+    Create a new user in the database
+
+    Args:
+        username (str): The username
+        password (str): The password (will be hashed)
+        is_admin (bool): Whether the user is an admin (default: False)
+
+    Returns:
+        bool: True if the user was created successfully, False otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Hash the password
+        password_hash = hash_password(password)
+
+        # Insert the user
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)",
+            (username, password_hash, 1 if is_admin else 0)
+        )
+        conn.commit()
+        return True
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def authenticate_user(username, password):
+    """
+    Authenticate a user
+
+    Args:
+        username (str): The username
+        password (str): The password
+
+    Returns:
+        int or None: The user ID if authentication was successful, None otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Hash the password
+        password_hash = hash_password(password)
+
+        # Check if the user exists and the password is correct
+        cursor.execute(
+            "SELECT id FROM users WHERE username = ? AND password_hash = ?",
+            (username, password_hash)
+        )
+        result = cursor.fetchone()
+
+        return result[0] if result else None
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_user_count():
+    """
+    Get the number of users in the database
+
+    Returns:
+        int: The number of users
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        return cursor.fetchone()[0]
+    except Exception:
+        print_exc()
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def is_user_admin(user_id):
+    """
+    Check if a user is an admin
+
+    Args:
+        user_id (int): The user ID
+
+    Returns:
+        bool: True if the user is an admin, False otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_admin FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        return bool(result[0]) if result else False
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def create_reset_token(username):
+    """
+    Create a password reset token for a user
+
+    Args:
+        username (str): The username
+
+    Returns:
+        str or None: The reset token if successful, None otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Check if the user exists
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+
+        if not result:
+            return None
+
+        # Generate a token
+        token = secrets.token_urlsafe(32)
+        # Set expiration to 1 hour from now
+        expiration = int(time.time()) + 3600
+
+        # Update the user with the token
+        cursor.execute(
+            "UPDATE users SET reset_token = ?, reset_token_exp = ? WHERE username = ?",
+            (token, expiration, username)
+        )
+        conn.commit()
+
+        return token
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def verify_reset_token(token):
+    """
+    Verify a password reset token
+
+    Args:
+        token (str): The token to verify
+
+    Returns:
+        str or None: The username if the token is valid, None otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Get the current time
+        current_time = int(time.time())
+
+        # Check if the token exists and is not expired
+        cursor.execute(
+            "SELECT username FROM users WHERE reset_token = ? AND reset_token_exp > ?",
+            (token, current_time)
+        )
+        result = cursor.fetchone()
+
+        return result[0] if result else None
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def reset_password(token, new_password):
+    """
+    Reset a user's password using a token
+
+    Args:
+        token (str): The reset token
+        new_password (str): The new password
+
+    Returns:
+        bool: True if the password was reset successfully, False otherwise
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        # Get the username for the token
+        username = verify_reset_token(token)
+
+        if not username:
+            return False
+
+        # Hash the new password
+        password_hash = hash_password(new_password)
+
+        # Update the user's password and clear the token
+        cursor.execute(
+            "UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_exp = NULL WHERE username = ?",
+            (password_hash, username)
+        )
+        conn.commit()
+
+        return True
+    except Exception:
+        print_exc()
+        return False
     finally:
         if conn:
             conn.close()
