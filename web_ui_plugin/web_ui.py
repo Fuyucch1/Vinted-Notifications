@@ -46,6 +46,21 @@ def login_required(f):
     return decorated_function
 
 
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Please log in to access this page", "warning")
+            return redirect(url_for("login", next=request.url))
+        if not db.is_user_admin(session.get("user_id")):
+            flash("You don't have permission to access this page", "error")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 @app.context_processor
 def inject_version_info():
     is_up_to_date, current_ver, latest_version, github_url = core.check_version()
@@ -60,6 +75,14 @@ def inject_version_info():
 @app.context_processor
 def inject_current_year():
     return {"current_year": datetime.now().year}
+
+
+@app.context_processor
+def inject_user_info():
+    is_admin = False
+    if "user_id" in session:
+        is_admin = db.is_user_admin(session.get("user_id"))
+    return {"is_admin": is_admin}
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -547,11 +570,12 @@ def format_users(users):
 @login_required
 def config():
     params = db.get_all_parameters()
-    return render_template("config.html", params=params)
+    is_admin = db.is_user_admin(session.get("user_id"))
+    return render_template("config.html", params=params, is_admin=is_admin)
 
 
 @app.route("/users")
-@login_required
+@admin_required
 def users():
     # Get users for the user management section
     users = format_users(db.get_all_users())
@@ -561,46 +585,55 @@ def users():
 @app.route("/update_config", methods=["POST"])
 @login_required
 def update_config():
-    # Update Telegram parameters
-    telegram_enabled = "telegram_enabled" in request.form
-    db.set_parameter("telegram_enabled", str(telegram_enabled))
-    db.set_parameter("telegram_token", request.form.get("telegram_token", ""))
-    db.set_parameter("telegram_chat_id", request.form.get("telegram_chat_id", ""))
+    is_admin = db.is_user_admin(session.get("user_id"))
 
-    # Update RSS parameters
-    rss_enabled = "rss_enabled" in request.form
-    db.set_parameter("rss_enabled", str(rss_enabled))
-    db.set_parameter("rss_port", request.form.get("rss_port", "8080"))
-    db.set_parameter("rss_max_items", request.form.get("rss_max_items", "100"))
-
-    # Update System parameters
-    db.set_parameter("items_per_query", request.form.get("items_per_query", "20"))
-    db.set_parameter(
-        "query_refresh_delay", request.form.get("query_refresh_delay", "60")
-    )
+    # All users can update banwords
     db.set_parameter("banwords", request.form.get("banwords", ""))
 
-    # Update Proxy parameters
-    check_proxies = "check_proxies" in request.form
-    db.set_parameter("check_proxies", str(check_proxies))
-    db.set_parameter("proxy_list", request.form.get("proxy_list", ""))
-    db.set_parameter("proxy_list_link", request.form.get("proxy_list_link", ""))
+    # Only admins can update other settings
+    if is_admin:
+        # Update Telegram parameters
+        telegram_enabled = "telegram_enabled" in request.form
+        db.set_parameter("telegram_enabled", str(telegram_enabled))
+        db.set_parameter("telegram_token", request.form.get("telegram_token", ""))
+        db.set_parameter("telegram_chat_id", request.form.get("telegram_chat_id", ""))
 
-    # Update Advanced parameters
-    db.set_parameter("message_template", request.form.get("message_template", ""))
-    db.set_parameter("user_agents", request.form.get("user_agents", "[]"))
-    db.set_parameter("default_headers", request.form.get("default_headers", "{}"))
+        # Update RSS parameters
+        rss_enabled = "rss_enabled" in request.form
+        db.set_parameter("rss_enabled", str(rss_enabled))
+        db.set_parameter("rss_port", request.form.get("rss_port", "8080"))
+        db.set_parameter("rss_max_items", request.form.get("rss_max_items", "100"))
 
-    # Reset proxy cache to force refresh on next use
-    db.set_parameter("last_proxy_check_time", "1")
-    logger.info("Proxy settings updated, cache reset")
+        # Update System parameters (except banwords which all users can update)
+        db.set_parameter("items_per_query", request.form.get("items_per_query", "20"))
+        db.set_parameter(
+            "query_refresh_delay", request.form.get("query_refresh_delay", "60")
+        )
 
-    flash("Configuration updated", "success")
+        # Update Proxy parameters
+        check_proxies = "check_proxies" in request.form
+        db.set_parameter("check_proxies", str(check_proxies))
+        db.set_parameter("proxy_list", request.form.get("proxy_list", ""))
+        db.set_parameter("proxy_list_link", request.form.get("proxy_list_link", ""))
+
+        # Update Advanced parameters
+        db.set_parameter("message_template", request.form.get("message_template", ""))
+        db.set_parameter("user_agents", request.form.get("user_agents", "[]"))
+        db.set_parameter("default_headers", request.form.get("default_headers", "{}"))
+
+        # Reset proxy cache to force refresh on next use
+        db.set_parameter("last_proxy_check_time", "1")
+        logger.info("All configuration settings updated")
+        flash("Configuration updated", "success")
+    else:
+        logger.info("Non-admin user updated banwords settings")
+        flash("Banwords settings updated", "success")
+
     return redirect(url_for("config"))
 
 
 @app.route("/control/<process_name>/<action>", methods=["POST"])
-@login_required
+@admin_required
 def control_process(process_name, action):
     if process_name not in ["telegram", "rss"]:
         return jsonify({"status": "error", "message": "Invalid process name"})
@@ -676,7 +709,7 @@ def control_process(process_name, action):
 
 
 @app.route("/control/status", methods=["GET"])
-@login_required
+@admin_required
 def process_status():
     # Get process status from the database
     telegram_running = db.get_parameter("telegram_process_running") == "True"
@@ -727,7 +760,7 @@ def clear_allowlist():
 
 
 @app.route("/logs")
-@login_required
+@admin_required
 def logs():
     return render_template("logs.html")
 
@@ -873,7 +906,7 @@ def admin_reset_password():
 
 
 @app.route("/api/logs")
-@login_required
+@admin_required
 def api_logs():
     offset = int(request.args.get("offset", 0))
     limit = int(request.args.get("limit", 100))

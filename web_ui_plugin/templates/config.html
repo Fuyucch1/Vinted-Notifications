@@ -24,6 +24,7 @@
                                     <h5 class="card-title mb-0">System Settings</h5>
                                 </div>
                                 <div class="card-body">
+                                    {% if is_admin %}
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
@@ -52,6 +53,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                    {% endif %}
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="mb-3">
@@ -78,6 +80,7 @@
                             </div>
                         </div>
                     </div>
+                    {% if is_admin %}
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="card h-100">
@@ -167,6 +170,8 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if is_admin %}
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="card h-100">
@@ -259,6 +264,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 
                     <div class="row">
                         <div class="col-md-12">
@@ -271,6 +277,7 @@
     </div>
 </div>
 
+{% if is_admin %}
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="card">
@@ -320,6 +327,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
