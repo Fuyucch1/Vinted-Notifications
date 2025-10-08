@@ -24,28 +24,36 @@
                                     <h5 class="card-title mb-0">System Settings</h5>
                                 </div>
                                 <div class="card-body">
+                                    {% if is_admin %}
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="items_per_query" class="form-label">Items Per Query</label>
+                                                <label for="items_per_query" class="form-label required-field">Items Per Query</label>
                                                 <input type="number" class="form-control" id="items_per_query"
                                                        name="items_per_query" value="{{ params.items_per_query }}">
                                                 <small class="form-text text-muted">Maximum number of items to fetch per
                                                     query</small>
+                                                <div class="valid-feedback">Looks good!</div>
+                                                <div class="warning-feedback">This value seems unusual. Please check.</div>
+                                                <div class="invalid-feedback">Please provide a valid number.</div>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="query_refresh_delay" class="form-label">Query Refresh Delay
+                                                <label for="query_refresh_delay" class="form-label required-field">Query Refresh Delay
                                                     (seconds)</label>
                                                 <input type="number" class="form-control" id="query_refresh_delay"
                                                        name="query_refresh_delay"
                                                        value="{{ params.query_refresh_delay }}">
                                                 <small class="form-text text-muted">Delay between query refreshes in
                                                     seconds</small>
+                                                <div class="valid-feedback">Looks good!</div>
+                                                <div class="warning-feedback">This value seems unusual. Please check.</div>
+                                                <div class="invalid-feedback">Please provide a valid number.</div>
                                             </div>
                                         </div>
                                     </div>
+                                    {% endif %}
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="mb-3">
@@ -72,6 +80,7 @@
                             </div>
                         </div>
                     </div>
+                    {% if is_admin %}
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="card h-100">
@@ -95,17 +104,23 @@
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="telegram_token" class="form-label">Bot Token</label>
+                                        <label for="telegram_token" class="form-label required-field">Bot Token</label>
                                         <input type="text" class="form-control" id="telegram_token"
                                                name="telegram_token" value="{{ params.telegram_token }}">
                                         <small class="form-text text-muted">Get this from BotFather</small>
+                                        <div class="valid-feedback">Looks good!</div>
+                                        <div class="warning-feedback">This token format seems unusual. Please check.</div>
+                                        <div class="invalid-feedback">Please provide a valid bot token.</div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="telegram_chat_id" class="form-label">Chat ID</label>
+                                        <label for="telegram_chat_id" class="form-label required-field">Chat ID</label>
                                         <input type="text" class="form-control" id="telegram_chat_id"
                                                name="telegram_chat_id" value="{{ params.telegram_chat_id }}">
                                         <small class="form-text text-muted">The chat ID where notifications will be
                                             sent</small>
+                                        <div class="valid-feedback">Looks good!</div>
+                                        <div class="warning-feedback">This chat ID format seems unusual. Please check.</div>
+                                        <div class="invalid-feedback">Please provide a valid chat ID.</div>
                                     </div>
                                 </div>
                             </div>
@@ -132,23 +147,31 @@
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="rss_port" class="form-label">Port</label>
+                                        <label for="rss_port" class="form-label required-field">Port</label>
                                         <input type="number" class="form-control" id="rss_port" name="rss_port"
                                                value="{{ params.rss_port }}">
                                         <small class="form-text text-muted">The port on which the RSS feed will be
                                             served</small>
+                                        <div class="valid-feedback">Looks good!</div>
+                                        <div class="warning-feedback">This port number seems unusual. Please check.</div>
+                                        <div class="invalid-feedback">Please provide a valid port number.</div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="rss_max_items" class="form-label">Maximum Items</label>
+                                        <label for="rss_max_items" class="form-label required-field">Maximum Items</label>
                                         <input type="number" class="form-control" id="rss_max_items"
                                                name="rss_max_items" value="{{ params.rss_max_items }}">
                                         <small class="form-text text-muted">Maximum number of items to keep in the RSS
                                             feed</small>
+                                        <div class="valid-feedback">Looks good!</div>
+                                        <div class="warning-feedback">This value seems unusual. Please check.</div>
+                                        <div class="invalid-feedback">Please provide a valid number.</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    {% endif %}
+                    {% if is_admin %}
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="card h-100">
@@ -241,6 +264,8 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
+
                     <div class="row">
                         <div class="col-md-12">
                             <button type="submit" class="btn btn-primary">Save Configuration</button>
@@ -252,6 +277,7 @@
     </div>
 </div>
 
+{% if is_admin %}
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="card">
@@ -301,11 +327,13 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
         // Process control buttons
         const processButtons = document.querySelectorAll('.process-control');
         processButtons.forEach(button => {

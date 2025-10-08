@@ -187,10 +187,29 @@ main {
 }
 
 /* Vinted-style flash messages */
-.flash-message {
+.flash-message, .alert {
     box-shadow: var(--shadow-md);
     border-radius: var(--border-radius);
     border: none;
+    background-color: white;
+}
+
+.alert-error, .alert-danger {
+    color: var(--danger-color);
+    background-color: rgba(220, 53, 69, 0.1);
+    border-left: 4px solid var(--danger-color);
+}
+
+.alert-warning {
+    color: var(--warning-color);
+    background-color: rgba(255, 193, 7, 0.1);
+    border-left: 4px solid var(--warning-color);
+}
+
+.alert-success {
+    color: var(--success-color);
+    background-color: rgba(40, 167, 69, 0.1);
+    border-left: 4px solid var(--success-color);
 }
 
 /* Vinted-style form controls */
@@ -203,6 +222,72 @@ main {
 .form-control:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 0.2rem rgba(9, 177, 186, 0.15);
+}
+
+/* Field validation styles */
+.form-control.is-valid {
+    border-color: var(--success-color);
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+.form-control.is-valid:focus {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+}
+
+.form-control.is-warning {
+    border-color: var(--warning-color);
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.form-control.is-warning:focus {
+    border-color: var(--warning-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.15);
+}
+
+.form-control.is-invalid {
+    border-color: var(--danger-color);
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.form-control.is-invalid:focus {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15);
+}
+
+/* Validation feedback messages */
+.valid-feedback {
+    display: none;
+    color: var(--success-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.warning-feedback {
+    display: none;
+    color: var(--warning-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.invalid-feedback {
+    display: none;
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.form-control.is-valid ~ .valid-feedback,
+.form-control.is-warning ~ .warning-feedback,
+.form-control.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+/* Required field indicator */
+.required-field::after {
+    content: " *";
+    color: var(--danger-color);
+    font-weight: bold;
 }
 
 .form-select {
@@ -294,6 +379,68 @@ main {
 #listView .img-thumbnail {
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
+}
+
+/* Password requirements styling */
+.password-requirements ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.password-requirements li {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: 5px;
+    transition: color 0.3s ease;
+}
+
+.password-requirements li::before {
+    font-family: "Bootstrap Icons";
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.password-requirements li.valid {
+    color: var(--success-color);
+}
+
+.password-requirements li.valid::before {
+    content: "\F26B"; /* bi-check-circle-fill */
+    font-family: "bootstrap-icons";
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    color: var(--success-color);
+    margin-right: 0.5em;
+}
+
+.password-requirements li.invalid {
+    color: var(--danger-color);
+}
+
+.password-requirements li.invalid::before {
+    content: "\F623"; /* bi-x-circle-fill */
+    font-family: "bootstrap-icons";
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    color: var(--danger-color);
+    margin-right: 0.5em;
+}
+
+.password-requirements li.neutral {
+    color: var(--text-muted);
+}
+
+.password-requirements li.neutral::before {
+    content: "\F28A"; /* bi-circle */
+    font-family: "bootstrap-icons";
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    color: var(--text-muted);
+    margin-right: 0.5em;
 }
 
 /* Responsive adjustments */
