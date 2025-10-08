@@ -1,12 +1,9 @@
 import multiprocessing
 import time
-import core
 import os
 import db
 from apscheduler.schedulers.background import BackgroundScheduler
 from logger import get_logger
-from rss_feed_plugin.rss_feed import rss_feed_process
-from web_ui_plugin.web_ui import web_ui_process
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -194,6 +191,10 @@ if __name__ == "__main__":
         os.makedirs("./data", exist_ok=True)
         db.create_or_update_sqlite_db("initial_db.sql")
         logger.info("Database created successfully")
+
+    import core
+    from rss_feed_plugin.rss_feed import rss_feed_process
+    from web_ui_plugin.web_ui import web_ui_process
 
     # Run db migrations
     current_version = db.get_parameter("version")
