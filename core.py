@@ -132,7 +132,7 @@ def process_remove_query(number):
         return "All queries removed.", True
 
     # Check if number is a valid digit
-    if isinstance(number, int):
+    if number.isdigit():
         # Remove the query from the database
         db.remove_query_from_db(number)
         return "Query removed.", True
