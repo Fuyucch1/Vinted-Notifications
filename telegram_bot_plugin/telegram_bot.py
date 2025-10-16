@@ -122,7 +122,7 @@ class LeRobot:
             # Process the removal using the core function
             if number[0] != "all":
                 number[0] = db.get_query_id_by_rowid(number[0])
-            message, success = core.process_remove_query(number[0])
+            message, success = core.process_remove_query(str(number[0]))
 
             if success:
                 if number[0] == "all":
