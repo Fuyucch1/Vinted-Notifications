@@ -151,6 +151,15 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="d-flex ms-auto me-3 align-items-center">
+            {% if session.username %}
+            <span class="text-light me-3 d-none d-md-flex align-items-center">
+                <i class="bi bi-person-fill me-1"></i> {{ session.username }}
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm header-btn me-2">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+            {% endif %}
+
             {% if github_url is defined %}
             {% if is_up_to_date is defined %}
             <span class="version-info text-light me-3 d-none d-md-flex align-items-center">
@@ -201,11 +210,18 @@
                             <i class="bi bi-gear me-2"></i> Configuration
                         </a>
                     </li>
+                    {% if is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/users' %}active{% endif %}" href="/users">
+                            <i class="bi bi-people me-2"></i> Users
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/logs' %}active{% endif %}" href="/logs">
                             <i class="bi bi-journal-text me-2"></i> Logs
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </nav>
@@ -289,6 +305,163 @@
                 bsAlert.close();
             });
         }, 5000);
+
+        // Form validation
+        const forms = document.querySelectorAll('form');
+        forms.forEach(function(form) {
+            // Add validation on form submission
+            form.addEventListener('submit', function(event) {
+                let isValid = true;
+
+                // Check all required fields
+                const requiredFields = form.querySelectorAll('.required-field + input, .required-field + textarea, .required-field + select');
+                requiredFields.forEach(function(field) {
+                    if (!field.value.trim()) {
+                        field.classList.add('is-invalid');
+                        field.classList.remove('is-valid', 'is-warning');
+                        isValid = false;
+                    } else {
+                        field.classList.add('is-valid');
+                        field.classList.remove('is-invalid', 'is-warning');
+                    }
+                });
+
+                // Prevent form submission if validation fails
+                if (!isValid) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+
+            // Add validation on input change
+            const inputs = form.querySelectorAll('input, textarea, select');
+            inputs.forEach(function(input) {
+                input.addEventListener('input', function() {
+                    validateField(input);
+                });
+
+                input.addEventListener('blur', function() {
+                    validateField(input);
+                });
+
+                // Initial validation
+                validateField(input);
+            });
+        });
+
+        // Field validation function
+        function validateField(field) {
+            // Check if field is required
+            const isRequired = field.previousElementSibling && field.previousElementSibling.classList.contains('required-field');
+
+            // Skip validation for non-required empty fields
+            if (!isRequired && !field.value.trim()) {
+                field.classList.remove('is-valid', 'is-invalid', 'is-warning');
+                return;
+            }
+
+            // Validate based on field type
+            if (field.type === 'email') {
+                validateEmail(field);
+            } else if (field.type === 'password') {
+                validatePassword(field);
+            } else if (field.type === 'number') {
+                validateNumber(field);
+            } else if (field.type === 'url') {
+                validateUrl(field);
+            } else if (field.tagName.toLowerCase() === 'textarea' && field.id === 'user_agents' || field.id === 'default_headers') {
+                validateJson(field);
+            } else {
+                // Default validation for text fields
+                if (isRequired && !field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    field.classList.remove('is-valid', 'is-warning');
+                } else if (field.value.trim().length < 3 && field.value.trim().length > 0) {
+                    field.classList.add('is-warning');
+                    field.classList.remove('is-valid', 'is-invalid');
+                } else if (field.value.trim()) {
+                    field.classList.add('is-valid');
+                    field.classList.remove('is-invalid', 'is-warning');
+                }
+            }
+        }
+
+        // Email validation
+        function validateEmail(field) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid', 'is-warning');
+            } else if (!emailRegex.test(field.value.trim())) {
+                field.classList.add('is-warning');
+                field.classList.remove('is-valid', 'is-invalid');
+            } else {
+                field.classList.add('is-valid');
+                field.classList.remove('is-invalid', 'is-warning');
+            }
+        }
+
+        // Password validation
+        function validatePassword(field) {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid', 'is-warning');
+            } else if (field.value.trim().length < 8) {
+                field.classList.add('is-warning');
+                field.classList.remove('is-valid', 'is-invalid');
+            } else {
+                field.classList.add('is-valid');
+                field.classList.remove('is-invalid', 'is-warning');
+            }
+        }
+
+        // Number validation
+        function validateNumber(field) {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid', 'is-warning');
+            } else if (isNaN(field.value.trim())) {
+                field.classList.add('is-warning');
+                field.classList.remove('is-valid', 'is-invalid');
+            } else {
+                field.classList.add('is-valid');
+                field.classList.remove('is-invalid', 'is-warning');
+            }
+        }
+
+        // URL validation
+        function validateUrl(field) {
+            try {
+                new URL(field.value.trim());
+                field.classList.add('is-valid');
+                field.classList.remove('is-invalid', 'is-warning');
+            } catch (_) {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    field.classList.remove('is-valid', 'is-warning');
+                } else {
+                    field.classList.add('is-warning');
+                    field.classList.remove('is-valid', 'is-invalid');
+                }
+            }
+        }
+
+        // JSON validation
+        function validateJson(field) {
+            if (!field.value.trim()) {
+                field.classList.remove('is-valid', 'is-invalid', 'is-warning');
+                return;
+            }
+
+            try {
+                JSON.parse(field.value.trim());
+                field.classList.add('is-valid');
+                field.classList.remove('is-invalid', 'is-warning');
+            } catch (_) {
+                field.classList.add('is-warning');
+                field.classList.remove('is-valid', 'is-invalid');
+            }
+        }
     });
 </script>
 {% block scripts %}{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Vinted Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">User Management</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="bi bi-people me-2 text-info"></i>
+                <h5 class="card-title mb-0">Users</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h6 class="mb-3">Add New User</h6>
+                        <form id="addUserForm" action="/add_user" method="post" class="mb-4">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin">
+                                        <label class="form-check-label" for="is_admin">
+                                            Admin privileges (not recommended)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">Add User</button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted mt-2">
+                                A password setup link valid for 24 hours will be generated and displayed for copying.
+                            </small>
+                        </form>
+
+                        <h6 class="mb-3">Existing Users</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.username }}</td>
+                                        <td>
+                                            {% if user.is_admin %}
+                                            <span class="badge bg-danger">Admin</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">User</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ user.created_at }}</td>
+                                        <td>
+                                            <form action="/delete_user/{{ user.id }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                <button type="submit" class="btn btn-sm btn-danger" {% if user.id == session.user_id %}disabled{% endif %}>
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                            <form action="/admin_reset_password" method="post" class="d-inline">
+                                                <input type="hidden" name="username" value="{{ user.username }}">
+                                                <button type="submit" class="btn btn-sm btn-warning">
+                                                    <i class="bi bi-key"></i> Reset Password
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden fields for reset link data -->
+{% if show_reset_modal and reset_url and new_username %}
+<input type="hidden" id="showResetModal" value="true">
+<input type="hidden" id="resetUrlValue" value="{{ reset_url }}">
+<input type="hidden" id="newUsernameValue" value="{{ new_username }}">
+{% endif %}
+
+<!-- Reset Password Link Modal -->
+<div class="modal fade" id="resetLinkModal" tabindex="-1" aria-labelledby="resetLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetLinkModalLabel">Password Reset Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>A password reset link has been generated for <strong id="resetLinkUsername"></strong>. This link will expire in 24 hours.</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="resetLinkInput" readonly>
+                    <button class="btn btn-outline-secondary" type="button" id="copyResetLinkBtn">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                </div>
+                <div class="alert alert-success d-none" id="copySuccess">Link copied to clipboard!</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check if we need to show the reset link modal
+        const showResetModal = document.getElementById('showResetModal');
+        if (showResetModal && showResetModal.value === 'true') {
+            const resetUrl = document.getElementById('resetUrlValue').value;
+            const username = document.getElementById('newUsernameValue').value;
+
+            // Set the values in the modal
+            document.getElementById('resetLinkUsername').textContent = username;
+            document.getElementById('resetLinkInput').value = resetUrl;
+
+            // Show the modal
+            const resetLinkModal = new bootstrap.Modal(document.getElementById('resetLinkModal'));
+            resetLinkModal.show();
+        }
+
+        // Copy reset link to clipboard
+        document.getElementById('copyResetLinkBtn').addEventListener('click', function() {
+            const resetLinkInput = document.getElementById('resetLinkInput');
+            resetLinkInput.select();
+            document.execCommand('copy');
+
+            // Show success message
+            const copySuccess = document.getElementById('copySuccess');
+            copySuccess.classList.remove('d-none');
+
+            // Hide success message after 3 seconds
+            setTimeout(function() {
+                copySuccess.classList.add('d-none');
+            }, 3000);
+        });
+
+        // Handle add user form submission with AJAX
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            // Add X-Requested-With header to identify as AJAX request
+            const headers = new Headers({
+                'X-Requested-With': 'XMLHttpRequest'
+            });
+
+            fetch('/add_user', {
+                method: 'POST',
+                body: formData,
+                headers: headers
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show flash-message';
+                    alertDiv.setAttribute('role', 'alert');
+                    alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('.flash-messages').appendChild(alertDiv);
+
+                    // Set the values in the modal
+                    document.getElementById('resetLinkUsername').textContent = formData.get('username');
+                    document.getElementById('resetLinkInput').value = data.reset_url;
+
+                    // Show the modal
+                    const resetLinkModal = new bootstrap.Modal(document.getElementById('resetLinkModal'));
+                    resetLinkModal.show();
+
+                    // Clear the form
+                    document.getElementById('username').value = '';
+                    document.getElementById('is_admin').checked = false;
+
+                    // Reload the users table
+                    setTimeout(function() {
+                        location.reload();
+                    }, 5000);
+                } else {
+                    // Show error message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger alert-dismissible fade show flash-message';
+                    alertDiv.setAttribute('role', 'alert');
+                    alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('.flash-messages').appendChild(alertDiv);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger alert-dismissible fade show flash-message';
+                alertDiv.setAttribute('role', 'alert');
+                alertDiv.innerHTML = `
+                    An error occurred while adding the user. Please try again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.querySelector('.flash-messages').appendChild(alertDiv);
+            });
+        });
+    });
+</script>
+{% endblock %}
