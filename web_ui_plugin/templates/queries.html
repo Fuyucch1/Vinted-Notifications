@@ -58,9 +58,23 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-search me-2 text-info"></i>
-                <h5 class="card-title mb-0">Current Queries</h5>
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-search me-2 text-info"></i>
+                    <h5 class="card-title mb-0">Current Queries</h5>
+                </div>
+                {% if is_admin %}
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('queries', show_others=0 if show_others else 1) }}"
+                       class="btn btn-sm btn-outline-secondary">
+                        {% if show_others %}
+                        <i class="bi bi-eye-slash"></i> Hide other users' queries
+                        {% else %}
+                        <i class="bi bi-eye"></i> Show other users' queries
+                        {% endif %}
+                    </a>
+                </div>
+                {% endif %}
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -69,7 +83,9 @@
                         <tr>
                             <th>#</th>
                             <th>Query</th>
+                            {% if is_admin %}<th>Owner</th>{% endif %}
                             <th>Last Found Item</th>
+                            <th>Delay (s)</th>
                             <th>Actions</th>
                         </tr>
                         </thead>
@@ -77,14 +93,26 @@
                         {% for query in queries %}
                         <tr>
                             <td>{{ query.id }}</td>
-                            <td>{{ query.display }}</td>
+                            <td>{{ query.display }} {% if not query.enabled %}<span class="badge bg-secondary ms-2">Disabled</span>{% endif %}</td>
+                            {% if is_admin %}<td>{{ query.owner }}</td>{% endif %}
                             <td>{{ query.last_found_item }}</td>
+                            <td>{{ query.delay }}</td>
                             <td>
-                                <div class="btn-group" role="group">
+                                <div class="btn-group queries-actions" role="group">
                                     <a href="/items?query={{ query.query_id }}"
                                        class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-box"></i> View Items
                                     </a>
+                                    <form id="toggleForm{{ query.query_id }}" action="/toggle_query/{{ query.query_id }}" method="post"></form>
+                                    {% if query.enabled %}
+                                    <button type="submit" form="toggleForm{{ query.query_id }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-toggle-on"></i> Disable
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" form="toggleForm{{ query.query_id }}" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-toggle-off"></i> Enable
+                                    </button>
+                                    {% endif %}
                                     <button type="button" class="btn btn-sm btn-outline-secondary"
                                             data-bs-toggle="modal"
                                             data-bs-target="#editModal{{ query.id }}">
@@ -132,6 +160,38 @@
                                                                required
                                                                placeholder="My search">
                                                     </div>
+                                                    <div class="mb-3">
+                                                        <label for="delay{{ query.id }}" class="form-label">
+                                                            Delay (seconds)
+                                                        </label>
+                                                        <input type="number"
+                                                               class="form-control"
+                                                               id="delay{{ query.id }}"
+                                                               name="delay"
+                                                               min="1"
+                                                               value="{{ query.delay }}">
+                                                        <div class="form-text">
+                                                            How often this search should run, in seconds.
+                                                        </div>
+                                                    </div>
+
+                                                    {% if is_admin %}
+                                                    <div class="mb-3">
+                                                        <label for="owner{{ query.id }}" class="form-label">Owner</label>
+                                                        <select class="form-select" id="owner{{ query.id }}" name="owner_id">
+                                                            {% for user in users %}
+                                                            <option value="{{ user.id }}"
+                                                                    {% if query.owner_id == user.id %}selected{% endif %}>
+                                                                {{ user.username }}
+                                                            </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                        <div class="form-text">
+                                                            Change who owns this query.
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary"
@@ -176,7 +236,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center">No queries found</td>
+                            <td colspan="6" class="text-center">No queries found</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -200,8 +260,9 @@
                                         aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                Are you sure you want to remove <strong>ALL</strong> queries? This action cannot be
-                                undone.
+                                Are you sure you want to remove
+                                <strong>{% if is_admin %}ALL{% else %}ALL YOUR{% endif %}</strong> queries?
+                                This action cannot be undone.
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

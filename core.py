@@ -1,5 +1,6 @@
 import db
 import requests
+import time
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
@@ -8,7 +9,7 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 
-def process_query(query, name=None):
+def process_query(query, name=None, owner_id=None):
     """
     Process a Vinted query URL by:
     1. Checking if the URL is a brand URL and converting it to standard format if needed
@@ -75,13 +76,12 @@ def process_query(query, name=None):
     )
 
     # Some queries are made with filters only, so we need to check if the search_text is present
-    if db.is_query_in_db(processed_query) is True:
+    if db.is_query_in_db(processed_query, owner_id) is True:
         return "Query already exists.", False
     else:
         # add the query to the db
-        db.add_query_to_db(processed_query, name)
+        db.add_query_to_db(processed_query, name, owner_id)
         return "Query added.", True
-
 
 def get_formatted_query_list():
     """
@@ -140,7 +140,7 @@ def process_remove_query(number):
         return "Invalid number.", False
 
 
-def process_update_query(query_id, query, name):
+def process_update_query(query_id, query, name, delay=None, owner_id=None):
     """
     Process the update of a query in the database.
 
@@ -180,7 +180,13 @@ def process_update_query(query_id, query, name):
     )
 
     # Update the query in the database
-    if db.update_query_in_db(query_id, processed_query, name):
+    if db.update_query_in_db(
+            query_id,
+            query=processed_query,
+            name=name,
+            owner_id=owner_id,
+            delay=delay,
+    ):
         return "Query updated.", True
     else:
         return "Failed to update query.", False
@@ -286,7 +292,12 @@ def process_items(queue):
         None
     """
 
-    all_queries = db.get_queries()
+    # Fetch queries that are due to run
+    now_ts = int(time.time())
+    all_queries = db.get_due_queries(now_ts)
+
+    if not all_queries:
+        return  # nothing to do right now
 
     # Initialize Vinted
     vinted = Vinted()
@@ -294,13 +305,29 @@ def process_items(queue):
     # Get the number of items per query from the database
     items_per_query = int(db.get_parameter("items_per_query"))
 
-    # for each keyword we parse data
+    # for each query we parse data
     for query in all_queries:
-        all_items = vinted.items.search(query[1], nbr_items=items_per_query)
+        query_id, query_url, last_run, delay = query
+
+        try:
+            all_items = vinted.items.search(query_url, nbr_items=items_per_query)
+        except Exception as e:
+            logger.error(f"Error scraping query {query_id}: {e}", exc_info=True)
+            # Still bump last_run so we don't hammer a broken query every tick
+            db.update_last_run(query_id, now_ts)
+            continue
+
         # Filter to only include new items. This should reduce the amount of db calls.
         data = [item for item in all_items if item.is_new_item()]
-        queue.put((data, query[0]))
-        logger.info(f"Scraped {len(data)} items for query: {query[1]}")
+        queue.put((data, query_id))
+
+        # Mark this query as having just run
+        db.update_last_run(query_id, now_ts)
+
+        logger.info(
+            f"Scraped {len(data)} items for query_id={query_id} "
+            f"(delay={delay}s, last_run={last_run}, url={query_url})"
+        )
 
 
 def clear_item_queue(items_queue, new_items_queue):
