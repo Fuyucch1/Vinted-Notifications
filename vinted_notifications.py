@@ -218,6 +218,9 @@ if __name__ == "__main__":
     # Plugin checker
     plugin_checker()
 
+    # Normalize any previously stored queries that might contain corrupted params
+    core.normalize_existing_queries()
+
     # Create a shared queue
     items_queue = multiprocessing.Queue()
     new_items_queue = multiprocessing.Queue()

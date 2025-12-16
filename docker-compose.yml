@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   vinted-notifications:
-    image: fuyucch1/vinted-notifications:latest
-    pull_policy: always
+    build: .
+    image: vinted-notifications:local
     ports:
-      - "8000:8000"
+      - "9005:8000"
       - "8080:8080"
     volumes:
       - VN_data:/app/data

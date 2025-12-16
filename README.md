@@ -67,7 +67,7 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 3. **Access the Web UI**
 
-   Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
+   Once started, access the Web UI at [http://localhost:9005](http://localhost:9005) to complete the setup.
 
 ### Option 2: Docker Compose (Recommended)
 
@@ -78,17 +78,15 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 #### Setup with Docker Compose
 
-1. **Create a docker-compose.yml file**
+1. **Use the provided docker-compose.yml**
 
    ```yaml
-   version: '3.8'
-
    services:
      vinted-notifications:
-       image: fuyucch1/vinted-notifications:latest
-       pull_policy: always
+       build: .
+       image: vinted-notifications:local
        ports:
-         - "8000:8000"
+         - "9005:8000"
          - "8080:8080"
        volumes:
          - VN_data:/app/data
@@ -114,7 +112,7 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 3. **Access the Web UI**
 
-   Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
+Once started, access the Web UI at [http://localhost:9005](http://localhost:9005) to complete the setup.
 
 ### Option 3: Self-Build
 

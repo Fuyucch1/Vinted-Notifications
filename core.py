@@ -3,9 +3,82 @@ import requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
+from html import unescape
+from typing import Optional
 
 # Get logger for this module
 logger = get_logger(__name__)
+
+
+def normalize_query_url(query: str) -> str:
+    """
+    Clean up common artifacts that break query parsing, especially HTML entity issues
+    that turn '&currency=' into '¤cy='.
+    """
+    if not query:
+        return query
+
+    cleaned = unescape(query)
+
+    # If currency param disappeared because '&currency' became '¤cy', fix it.
+    if "currency=" not in cleaned:
+        for marker in ("¤cy=", "%C2%A4cy%3D", "%c2%a4cy%3d"):
+            if marker in cleaned:
+                cleaned = cleaned.replace(marker, "&currency=")
+                break
+
+    return cleaned
+
+
+def normalize_and_rebuild_query(raw_query: str) -> str:
+    """
+    Normalize a stored query and rebuild its query string with the expected flags.
+    Used to clean existing DB entries that may have been corrupted before we added
+    the normalization on input.
+    """
+    raw_query = normalize_query_url(raw_query)
+    parsed_url = urlparse(raw_query)
+    query_params = parse_qs(parsed_url.query)
+
+    # Ensure the order flag is set to newest_first
+    query_params["order"] = ["newest_first"]
+    # Remove transient params
+    query_params.pop("time", None)
+    query_params.pop("search_id", None)
+    query_params.pop("disabled_personalization", None)
+    query_params.pop("page", None)
+
+    new_query = urlencode(query_params, doseq=True)
+    return urlunparse(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            parsed_url.path,
+            parsed_url.params,
+            new_query,
+            parsed_url.fragment,
+        )
+    )
+
+
+def normalize_existing_queries():
+    """
+    Normalize all queries already present in the database to remove corrupted
+    currency markers and ensure consistent flags.
+    """
+    try:
+        queries = db.get_queries()
+        updated = 0
+        for q in queries:
+            query_id, query, _, query_name = q
+            processed_query = normalize_and_rebuild_query(query)
+            if processed_query != query:
+                db.update_query_in_db(query_id, processed_query, query_name)
+                updated += 1
+        if updated:
+            logger.info(f"Normalized {updated} stored queries.")
+    except Exception as e:
+        logger.error(f"Error normalizing existing queries: {e}", exc_info=True)
 
 
 def process_query(query, name=None):
@@ -28,6 +101,9 @@ def process_query(query, name=None):
             - message (str): Status message
             - is_new_query (bool): True if query was added, False if it already existed
     """
+    # Normalize user input to undo HTML entity mangling (eg. &currency -> ¤cy)
+    query = normalize_query_url(query)
+
     # Check if the URL is a brand URL (format: url/brand/id-name)
     parsed_url = urlparse(query)
     path_parts = parsed_url.path.strip("/").split("/")
@@ -154,6 +230,9 @@ def process_update_query(query_id, query, name):
             - message (str): Status message
             - success (bool): True if query was updated successfully
     """
+    # Normalize user input to undo HTML entity mangling (eg. &currency -> ¤cy)
+    query = normalize_query_url(query)
+
     # Parse the URL and extract the query parameters
     parsed_url = urlparse(query)
     query_params = parse_qs(parsed_url.query)
@@ -297,10 +376,18 @@ def process_items(queue):
     # for each keyword we parse data
     for query in all_queries:
         all_items = vinted.items.search(query[1], nbr_items=items_per_query)
-        # Filter to only include new items. This should reduce the amount of db calls.
-        data = [item for item in all_items if item.is_new_item()]
+
+        # Reduce noise: only forward items newer than the last seen timestamp for this query
+        last_timestamp = db.get_last_timestamp(query[0])
+        if last_timestamp is not None:
+            data = [item for item in all_items if item.raw_timestamp > last_timestamp]
+        else:
+            data = all_items
+
         queue.put((data, query[0]))
-        logger.info(f"Scraped {len(data)} items for query: {query[1]}")
+        logger.info(
+            f"Scraped {len(data)} new / {len(all_items)} total items for query: {query[1]}"
+        )
 
 
 def clear_item_queue(items_queue, new_items_queue):

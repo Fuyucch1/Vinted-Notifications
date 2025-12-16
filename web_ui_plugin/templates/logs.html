@@ -152,12 +152,30 @@
                                 row.classList.add('table-warning');
                             }
 
-                            row.innerHTML = `
-                                <td>${log.timestamp}</td>
-                                <td><span class="badge log-${log.level.toLowerCase()}">${log.level}</span></td>
-                                <td>${log.module}</td>
-                                <td class="log-entry">${log.message}</td>
-                            `;
+                            // Timestamp
+                            const ts = document.createElement('td');
+                            ts.textContent = log.timestamp;
+                            row.appendChild(ts);
+
+                            // Level badge
+                            const levelTd = document.createElement('td');
+                            const badge = document.createElement('span');
+                            badge.className = `badge log-${log.level.toLowerCase()}`;
+                            badge.textContent = log.level;
+                            levelTd.appendChild(badge);
+                            row.appendChild(levelTd);
+
+                            // Module
+                            const moduleTd = document.createElement('td');
+                            moduleTd.textContent = log.module;
+                            row.appendChild(moduleTd);
+
+                            // Message (textContent to avoid HTML/entity interpretation)
+                            const msgTd = document.createElement('td');
+                            msgTd.classList.add('log-entry');
+                            msgTd.textContent = log.message;
+                            row.appendChild(msgTd);
+
                             logEntries.appendChild(row);
                         });
 

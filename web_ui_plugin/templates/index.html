@@ -65,14 +65,14 @@
                     {% endif %}
                     <div class="text-start">
                         <h6 class="mb-0 text-truncate" style="max-width: 150px;">
-                            <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
+                            <a href="{{ stats.last_item.url }}" target="_blank"
                                class="text-decoration-none">
                                 {{ stats.last_item.title }}
                             </a>
                         </h6>
                         <small class="text-muted">{{ stats.last_item.timestamp }}</small>
                         <div class="mt-1">
-                            <a href="https://www.vinted.fr/items/{{ stats.last_item.id }}" target="_blank"
+                            <a href="{{ stats.last_item.url }}" target="_blank"
                                class="btn btn-sm btn-outline-info">
                                 <i class="bi bi-box-arrow-up-right"></i> View
                             </a>
@@ -195,7 +195,7 @@
                                 </p>
                             </div>
                             <div class="card-footer bg-white p-2">
-                                <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank"
+                                <a href="{{ item.url }}" target="_blank"
                                    class="btn btn-sm btn-primary w-100">
                                     <i class="bi bi-box-arrow-up-right"></i> View
                                 </a>
@@ -239,7 +239,7 @@
                             <td>{{ item.price }} {{ item.currency }}</td>
                             <td>{{ item.timestamp }}</td>
                             <td>
-                                <a href="https://www.vinted.fr/items/{{ item.id }}" target="_blank"
+                                <a href="{{ item.url }}" target="_blank"
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-box-arrow-up-right"></i> View
                                 </a>

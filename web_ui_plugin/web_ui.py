@@ -82,7 +82,6 @@ def index():
     for item in items:
         formatted_items.append(
             {
-                "id": item[0],
                 "title": item[1],
                 "price": item[2],
                 "currency": item[3],
@@ -91,6 +90,7 @@ def index():
                 ),
                 "query": item[5],
                 "photo_url": item[6],
+                "url": f"{urlparse(item[5]).scheme}://{urlparse(item[5]).netloc}/items/{item[0]}",
             }
         )
 
@@ -109,7 +109,6 @@ def index():
     last_item = db.get_last_found_item()
     if last_item:
         stats["last_item"] = {
-            "id": last_item[0],
             "title": last_item[1],
             "price": last_item[2],
             "currency": last_item[3],
@@ -118,6 +117,7 @@ def index():
             ),
             "query": last_item[5],
             "photo_url": last_item[6],
+            "url": f"{urlparse(last_item[5]).scheme}://{urlparse(last_item[5]).netloc}/items/{last_item[0]}"
         }
     else:
         stats["last_item"] = None
@@ -256,12 +256,14 @@ def items():
                 "timestamp": datetime.fromtimestamp(item[4]).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
+                # Ugly Ugly Ugly very Ugly eeew but I have to do a proper migration of existing db later else it'll break
+                # Eeew bad me >:c
                 "query": (
-                    parse_qs(urlparse(item[5]).query).get("search_text", [None])[0]
+                    item[7] if item[7] else parse_qs(urlparse(item[5]).query).get("search_text", [None])[0]
                     if parse_qs(urlparse(item[5]).query).get("search_text", [None])[0]
                     else item[5]
                 ),
-                "url": f"https://www.vinted.fr/items/{item[0]}",
+                "url": f"{urlparse(item[5]).scheme}://{urlparse(item[5]).netloc}/items/{item[0]}",
                 "photo_url": item[6],
             }
         )

@@ -4,6 +4,7 @@ from urllib.parse import urlparse, parse_qsl
 from requests.exceptions import HTTPError
 from typing import List, Dict, Optional
 from pyVintedVN.settings import Urls
+from html import unescape
 
 
 class Items:
@@ -88,6 +89,14 @@ class Items:
         Returns:
             Dict: A dictionary of parameters for the Vinted API.
         """
+        # Normalize URL to undo HTML entity issues that can hide the currency param
+        url = unescape(url)
+        if "currency=" not in url:
+            for marker in ("¤cy=", "%C2%A4cy%3D", "%c2%a4cy%3d"):
+                if marker in url:
+                    url = url.replace(marker, "&currency=")
+                    break
+
         # Parse the query parameters from the URL
         queries = parse_qsl(urlparse(url).query)
 
