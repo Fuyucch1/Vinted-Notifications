@@ -73,6 +73,7 @@ def index():
                 "query": query[1],
                 "display": query_name if query_name else query[1],
                 "last_found_item": last_found_item,
+                "required_words": query[4] if len(query) > 4 else "",
             }
         )
 
@@ -164,6 +165,7 @@ def queries():
                 "query": query[1],
                 "display": query_name if query_name else query[1],
                 "last_found_item": last_found_item,
+                "required_words": query[4] if len(query) > 4 else "",
             }
         )
 
@@ -174,9 +176,12 @@ def queries():
 def add_query():
     query = request.form.get("query")
     query_name = request.form.get("query_name", "").strip()
+    required_words = request.form.get("required_words", "").strip()
     if query:
         message, is_new_query = core.process_query(
-            query, name=query_name if query_name != "" else None
+            query,
+            name=query_name if query_name != "" else None,
+            required_words=required_words,
         )
         if is_new_query:
             flash(f"Query added: {query}", "success")
@@ -214,10 +219,14 @@ def remove_all_queries():
 def update_query(query_id):
     query = request.form.get("query")
     query_name = request.form.get("query_name", "").strip()
+    required_words = request.form.get("required_words", "").strip()
 
     if query:
         message, success = core.process_update_query(
-            query_id, query, name=query_name if query_name != "" else None
+            query_id,
+            query,
+            name=query_name if query_name != "" else None,
+            required_words=required_words,
         )
         if success:
             flash("Query updated", "success")

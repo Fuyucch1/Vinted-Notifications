@@ -142,7 +142,7 @@ def process_remove_query(number):
         return "Invalid number.", False
 
 
-def process_update_query(query_id, query, name):
+def process_update_query(query_id, query, name, required_words=""):
     """
     Process the update of a query in the database.
 
@@ -150,6 +150,7 @@ def process_update_query(query_id, query, name):
         query_id (int): The ID of the query to update
         query (str): The new Vinted query URL
         name (str, optional): A new name for the query. If provided, it will be used as the query name.
+        required_words (str, optional): Required words filter (words separated by |||).
 
     Returns:
         tuple: (message, success)
@@ -182,7 +183,7 @@ def process_update_query(query_id, query, name):
     )
 
     # Update the query in the database
-    if db.update_query_in_db(query_id, processed_query, name):
+    if db.update_query_in_db(query_id, processed_query, name, required_words):
         return "Query updated.", True
     else:
         return "Failed to update query.", False

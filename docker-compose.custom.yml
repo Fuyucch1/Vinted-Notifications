@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  vinted-notifications:
+    # Build from local source instead of pulling from Docker Hub
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vinted-notifications-fork:latest
+    ports:
+      - "8000:8000"  # Web UI
+      - "8080:8080"  # RSS Feed
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    # Remove read_only to allow database migrations to run
+    tmpfs:
+      - /tmp
+
+volumes:
+  # Using bind mounts instead of named volumes for easier access
+  # This allows you to directly access the database and logs

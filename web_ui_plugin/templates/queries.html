@@ -19,7 +19,7 @@
                     <div class="row g-3">
 
                         <!-- Vinted URL (required) -->
-                        <div class="col-md-7">
+                        <div class="col-md-12">
                             <label for="query" class="form-label">Vinted search URL <span
                                     class="text-danger">*</span></label>
                             <input type="url"
@@ -35,7 +35,7 @@
                         </div>
 
                         <!-- Name (optional) -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label for="query_name" class="form-label">Name&nbsp;<span
                                     class="text-muted">(optional)</span></label>
                             <input type="text"
@@ -43,6 +43,20 @@
                                    id="query_name"
                                    name="query_name"
                                    placeholder="My search">
+                        </div>
+
+                        <!-- Required Words (optional) -->
+                        <div class="col-md-6">
+                            <label for="required_words" class="form-label">Required Words&nbsp;<span
+                                    class="text-muted">(optional)</span></label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="required_words"
+                                   name="required_words"
+                                   placeholder="word1|||word2|||word3">
+                            <div class="form-text">
+                                All words must appear in title or description. Separate with |||
+                            </div>
                         </div>
 
                         <div class="col-md-2 d-flex align-items-center">
@@ -131,6 +145,19 @@
                                                                value="{{ query.display if query.display != query.query else '' }}"
                                                                required
                                                                placeholder="My search">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="required_words{{ query.id }}" class="form-label">Required Words
+                                                            <span class="text-muted">(optional)</span></label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               id="required_words{{ query.id }}"
+                                                               name="required_words"
+                                                               value="{{ query.required_words }}"
+                                                               placeholder="word1|||word2|||word3">
+                                                        <div class="form-text">
+                                                            All words must appear in title or description. Separate with |||
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
