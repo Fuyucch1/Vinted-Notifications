@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS queries
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     query     TEXT,
     last_item NUMERIC,
-    query_name TEXT
+    query_name TEXT,
+    required_words TEXT DEFAULT ''
 );
 
 -- Items table

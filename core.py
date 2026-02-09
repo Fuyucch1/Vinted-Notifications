@@ -8,7 +8,7 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 
-def process_query(query, name=None):
+def process_query(query, name=None, required_words=""):
     """
     Process a Vinted query URL by:
     1. Checking if the URL is a brand URL and converting it to standard format if needed
@@ -22,6 +22,8 @@ def process_query(query, name=None):
     Args:
         query (str): The Vinted query URL
         name (str, optional): A name for the query. If provided, it will be used as the query name.
+        required_words (str, optional): Required words filter (words separated by |||).
+                                       All words must be present in title or description.
 
     Returns:
         tuple: (message, is_new_query)
@@ -79,7 +81,7 @@ def process_query(query, name=None):
         return "Query already exists.", False
     else:
         # add the query to the db
-        db.add_query_to_db(processed_query, name)
+        db.add_query_to_db(processed_query, name, required_words)
         return "Query added.", True
 
 
@@ -311,6 +313,7 @@ def clear_item_queue(items_queue, new_items_queue):
     if not items_queue.empty():
         data, query_id = items_queue.get()
         banwords_str = db.get_parameter("banwords")
+        required_words_str = db.get_required_words(query_id)
         for item in reversed(data):
 
             # If already in db, pass
@@ -335,6 +338,13 @@ def clear_item_queue(items_queue, new_items_queue):
             # Check if the item title contains any banwords
             elif banwords_str and contains_banwords(item.title, banwords_str):
                 # If it contains banwords, just update the timestamp and skip
+                db.update_last_timestamp(query_id, item.raw_timestamp)
+                pass
+            # Check if the item contains all required words in title or description
+            elif required_words_str and not contains_required_words(
+                item.title, item.description, required_words_str
+            ):
+                # If it doesn't contain all required words, just update the timestamp and skip
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
             else:
@@ -388,6 +398,56 @@ def contains_banwords(title, banwords_str):
             return True
 
     return False
+
+
+def contains_required_words(title, description, required_words_str):
+    """
+    Check if title or description contains ALL required words.
+
+    Each required word must appear in at least one of the fields (title OR description).
+    All required words must be present for the function to return True.
+
+    Args:
+        title (str): The title to check
+        description (str): The description to check
+        required_words_str (str): List of required words separated by ||| (3 pipe characters)
+
+    Returns:
+        bool: True if ALL required words are found in title or description, False otherwise
+
+    Examples:
+        >>> contains_required_words("Nintendo Switch", "Great condition", "nintendo|||switch")
+        True
+        >>> contains_required_words("Nintendo Switch", "", "nintendo|||playstation")
+        False
+        >>> contains_required_words("Apple Mouse", "Magic Mouse for sale", "magic|||mouse")
+        True
+    """
+    # If no required words specified, allow all items through
+    if not required_words_str or required_words_str.strip() == "":
+        return True
+
+    # Split the required words string into a list using ||| as delimiter
+    required_words = [
+        word.strip().lower() for word in required_words_str.split("|||") if word.strip()
+    ]
+
+    # If the list is empty after processing, allow all items through
+    if not required_words:
+        return True
+
+    # Convert title and description to lowercase for case-insensitive matching
+    title_lower = title.lower() if title else ""
+    description_lower = description.lower() if description else ""
+
+    # Check if ALL required words are present in either title or description
+    for word in required_words:
+        # Each word must appear in at least one field (title OR description)
+        if word not in title_lower and word not in description_lower:
+            return False
+
+    # All required words were found
+    return True
 
 
 def check_version():

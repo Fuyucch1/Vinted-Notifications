@@ -62,6 +62,33 @@ def get_last_timestamp(query_id):
             conn.close()
 
 
+def get_required_words(query_id):
+    """
+    Get the required_words for a specific query.
+
+    Args:
+        query_id (int): The ID of the query
+
+    Returns:
+        str: The required_words string, or empty string if not set
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT required_words FROM queries WHERE id=?", (query_id,))
+        result = cursor.fetchone()
+        if result and result[0]:
+            return result[0]
+        return ""
+    except Exception:
+        print_exc()
+        return ""
+    finally:
+        if conn:
+            conn.close()
+
+
 def update_last_timestamp(query_id, timestamp):
     conn = None
     try:
@@ -105,7 +132,9 @@ def get_queries():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, query, last_item, query_name FROM queries")
+        cursor.execute(
+            "SELECT id, query, last_item, query_name, required_words FROM queries"
+        )
         return cursor.fetchall()
     except Exception:
         print_exc()
@@ -135,19 +164,20 @@ def is_query_in_db(processed_query):
             conn.close()
 
 
-def add_query_to_db(query, name=None):
+def add_query_to_db(query, name=None, required_words=""):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         if name:
             cursor.execute(
-                "INSERT INTO queries (query, last_item, query_name) VALUES (?, NULL, ?)",
-                (query, name),
+                "INSERT INTO queries (query, last_item, query_name, required_words) VALUES (?, NULL, ?, ?)",
+                (query, name, required_words),
             )
         else:
             cursor.execute(
-                "INSERT INTO queries (query, last_item) VALUES (?, NULL)", (query,)
+                "INSERT INTO queries (query, last_item, required_words) VALUES (?, NULL, ?)",
+                (query, required_words),
             )
         conn.commit()
     except Exception:
@@ -210,7 +240,7 @@ def remove_all_queries_from_db():
             conn.close()
 
 
-def update_query_in_db(query_id, query, name):
+def update_query_in_db(query_id, query, name, required_words=""):
     """
     Update an existing query in the database.
 
@@ -218,6 +248,7 @@ def update_query_in_db(query_id, query, name):
         query_id (int): The ID of the query to update
         query (str): The new query URL
         name (str, optional): The new name for the query
+        required_words (str, optional): Required words filter (words separated by |||)
 
     Returns:
         bool: True if the query was updated successfully, False otherwise
@@ -227,8 +258,8 @@ def update_query_in_db(query_id, query, name):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE queries SET query=?, query_name=? WHERE id=?",
-            (query, name, query_id),
+            "UPDATE queries SET query=?, query_name=?, required_words=? WHERE id=?",
+            (query, name, required_words, query_id),
         )
         conn.commit()
         return True

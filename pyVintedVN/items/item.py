@@ -12,6 +12,7 @@ class Item:
         raw_data (dict): The raw data of the item as received from the API.
         id (str): The unique identifier of the item.
         title (str): The title of the item.
+        description (str): The description of the item, or empty string if not available.
         brand_title (str): The brand of the item.
         size_title (str): The size of the item, or None if not available.
         currency (str): The currency code of the item's price.
@@ -32,6 +33,8 @@ class Item:
         self.raw_data = data
         self.id = data["id"]
         self.title = data["title"]
+        # Extract description if available
+        self.description = data.get("description", "")
         self.brand_title = data["brand_title"]
         try:
             self.size_title = data["size_title"]
