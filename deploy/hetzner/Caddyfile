@@ -1,0 +1,9 @@
+{$APP_HOST} {
+    encode zstd gzip
+
+    handle_path /rss* {
+        reverse_proxy vinted-notifications:8080
+    }
+
+    reverse_proxy vinted-notifications:8000
+}

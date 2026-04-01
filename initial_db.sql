@@ -54,6 +54,7 @@ VALUES ('telegram_enabled', 'False'),
 
        ('rss_enabled', 'False'),
        ('rss_port', '8080'),
+       ('rss_public_url', ''),
        ('rss_max_items', '100'),
        ('rss_process_running', 'False'),
 

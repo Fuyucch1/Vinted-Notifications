@@ -139,6 +139,14 @@
                                             served</small>
                                     </div>
                                     <div class="mb-3">
+                                        <label for="rss_public_url" class="form-label">Public RSS URL</label>
+                                        <input type="url" class="form-control" id="rss_public_url"
+                                               name="rss_public_url" value="{{ params.rss_public_url or '' }}"
+                                               placeholder="https://example.com/rss/">
+                                        <small class="form-text text-muted">Optional. Set this when the RSS feed is
+                                            published through a reverse proxy or custom domain.</small>
+                                    </div>
+                                    <div class="mb-3">
                                         <label for="rss_max_items" class="form-label">Maximum Items</label>
                                         <input type="number" class="form-control" id="rss_max_items"
                                                name="rss_max_items" value="{{ params.rss_max_items }}">

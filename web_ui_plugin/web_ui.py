@@ -23,6 +23,27 @@ app = Flask(
 app.secret_key = os.urandom(24)
 
 
+def normalize_public_url(url):
+    url = (url or "").strip()
+    if not url:
+        return ""
+    return url if url.endswith("/") else f"{url}/"
+
+
+def build_default_rss_public_url():
+    hostname = urlparse(request.host_url).hostname or "localhost"
+    rss_port = db.get_parameter("rss_port") or "8080"
+    return f"http://{hostname}:{rss_port}/"
+
+
+def get_rss_public_url():
+    configured_url = normalize_public_url(db.get_parameter("rss_public_url"))
+    if configured_url:
+        return configured_url
+
+    return build_default_rss_public_url()
+
+
 @app.context_processor
 def inject_version_info():
     is_up_to_date, current_ver, latest_version, github_url = core.check_version()
@@ -37,6 +58,11 @@ def inject_version_info():
 @app.context_processor
 def inject_current_year():
     return {"current_year": datetime.now().year}
+
+
+@app.context_processor
+def inject_rss_public_url():
+    return {"rss_public_url": get_rss_public_url()}
 
 
 @app.route("/")
@@ -314,6 +340,7 @@ def update_config():
     rss_enabled = "rss_enabled" in request.form
     db.set_parameter("rss_enabled", str(rss_enabled))
     db.set_parameter("rss_port", request.form.get("rss_port", "8080"))
+    db.set_parameter("rss_public_url", request.form.get("rss_public_url", ""))
     db.set_parameter("rss_max_items", request.form.get("rss_max_items", "100"))
 
     # Update System parameters

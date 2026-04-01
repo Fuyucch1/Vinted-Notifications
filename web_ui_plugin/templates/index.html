@@ -123,8 +123,7 @@
                                 <h6 class="mb-0">RSS Feed</h6>
                                 <small class="text-muted">
                                     {% if rss_running %}
-                                    <a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{
-                                        params.rss_port }}</a>
+                                    <a href="{{ rss_public_url }}" target="_blank">Running at {{ rss_public_url }}</a>
                                     {% else %}
                                     Stopped
                                     {% endif %}
@@ -352,7 +351,7 @@
 
                                 // Update status text for RSS feed with hyperlink
                                 if (process === 'rss') {
-                                    statusContainer.innerHTML = '<a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{ params.rss_port }}</a>';
+                                    statusContainer.innerHTML = '<a href="{{ rss_public_url }}" target="_blank">Running at {{ rss_public_url }}</a>';
                                 } else {
                                     statusContainer.textContent = 'Running';
                                 }

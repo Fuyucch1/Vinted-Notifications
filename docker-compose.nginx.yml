@@ -1,0 +1,14 @@
+services:
+  vinted-notifications:
+    build: .
+    image: vinted-notifications:nginx
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:${VN_WEB_PORT:-9005}:8000"
+      - "127.0.0.1:${VN_RSS_PORT:-9010}:8080"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs

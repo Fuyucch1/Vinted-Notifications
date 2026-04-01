@@ -3,11 +3,27 @@ import requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from logger import get_logger
-from html import unescape
+from html import escape, unescape
 from typing import Optional
 
 # Get logger for this module
 logger = get_logger(__name__)
+
+
+def build_notification_content(message_template, item):
+    """
+    Build the Telegram/RSS message body while escaping dynamic item values.
+
+    The template itself may intentionally contain Telegram HTML markup, but
+    user-controlled fields such as titles and brands must be escaped or Telegram
+    will reject the entire message for items containing characters like '&' or '<'.
+    """
+    return message_template.format(
+        title=escape(item.title or ""),
+        price=escape(f"{item.price} {item.currency}"),
+        brand=escape(item.brand_title or ""),
+        image=escape(item.photo or "", quote=True),
+    )
 
 
 def normalize_query_url(query: str) -> str:
@@ -427,12 +443,7 @@ def clear_item_queue(items_queue, new_items_queue):
             else:
                 # We create the message
                 message_template = db.get_parameter("message_template")
-                content = message_template.format(
-                    title=item.title,
-                    price=str(item.price) + " " + item.currency,
-                    brand=item.brand_title,
-                    image=None if item.photo is None else item.photo,
-                )
+                content = build_notification_content(message_template, item)
                 # add the item to the queue
                 new_items_queue.put((content, item.url, "Open Vinted", None, None))
                 # new_items_queue.put((content, item.url, "Open Vinted", item.buy_url, "Open buy page"))

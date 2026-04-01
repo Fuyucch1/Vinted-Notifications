@@ -37,7 +37,11 @@ logs/
 # Docker
 Dockerfile
 docker-compose.yml
+docker-compose.hetzner.yml
+docker-compose.nginx.yml
 .dockerignore
+.env.hetzner
+.env.nginx
 
 # IDE
 .idea/

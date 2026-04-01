@@ -11,6 +11,22 @@ from feedgen.feed import FeedGenerator
 logger = get_logger(__name__)
 
 
+def normalize_public_url(url):
+    url = (url or "").strip()
+    if not url:
+        return ""
+    return url if url.endswith("/") else f"{url}/"
+
+
+def get_rss_public_url():
+    configured_url = normalize_public_url(db.get_parameter("rss_public_url"))
+    if configured_url:
+        return configured_url
+
+    rss_port = db.get_parameter("rss_port") or "8080"
+    return f"http://localhost:{rss_port}/"
+
+
 class RSSFeed:
     def __init__(self, queue):
         self.app = Flask(__name__)
@@ -22,7 +38,8 @@ class RSSFeed:
         self.fg = FeedGenerator()
         self.fg.title("Vinted Notifications")
         self.fg.description("Latest items from Vinted matching your search queries")
-        self.fg.link(href=f'http://localhost:{db.get_parameter("rss_port")}')
+        self.fg.id(get_rss_public_url())
+        self.fg.link(href=get_rss_public_url())
         self.fg.language("en")
 
         # Set up routes

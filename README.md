@@ -16,7 +16,7 @@ curl -O https://raw.githubusercontent.com/Fuyucch1/Vinted-Notifications/main/doc
 docker-compose up -d
 ```
 
-Then open [http://localhost:8000](http://localhost:8000) in your browser.
+Then open [http://localhost:9005](http://localhost:9005) in your browser.
 
 ---
 
@@ -67,7 +67,7 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 3. **Access the Web UI**
 
-   Once started, access the Web UI at [http://localhost:9005](http://localhost:9005) to complete the setup.
+   Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
 
 ### Option 2: Docker Compose (Recommended)
 
@@ -157,8 +157,8 @@ Once started, access the Web UI at [http://localhost:9005](http://localhost:9005
 
 ### Web UI
 
-The Web UI is the easiest way to manage the application. Access it at [http://localhost:8000](http://localhost:8000)
-after starting the application.
+The Web UI is the easiest way to manage the application. Access it at the host/port you published when starting the
+container. With the bundled Docker Compose file that is [http://localhost:9005](http://localhost:9005).
 
 Features available in the Web UI:
 
@@ -197,6 +197,10 @@ Queries must be added with a whole link. It works with filters.:
 The RSS feed provides an alternative way to receive notifications. After enabling it in the Web UI, access it
 at [http://localhost:8080](http://localhost:8080).
 
+## Hetzner Hosting
+
+For a Hetzner VPS deployment with Docker, HTTPS, and a reverse proxy, use [HETZNER.md](HETZNER.md).
+
 ## ⚙️ Advanced Configuration
 
 ### Proxy Support
@@ -216,6 +220,9 @@ MESSAGE = '''\
 <a href='{image}'>&#8205;</a>
 '''
 ```
+
+Dynamic placeholders such as `{title}` and `{brand}` are HTML-escaped before sending to Telegram, so custom templates
+can safely include Telegram HTML markup around them.
 
 ## 🔄 Updating
 

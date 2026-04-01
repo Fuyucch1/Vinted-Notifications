@@ -4,3 +4,5 @@ vinted.db
 /__pycache__
 /logs/vinted.log
 /vinted_notifications.db
+.env.hetzner
+.env.nginx
