@@ -162,8 +162,8 @@ def get_query_id_by_rowid(rowid):
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        query = f"SELECT id FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={rowid}"
-        cursor.execute(query)
+        query = "SELECT id FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn = ?"
+        cursor.execute(query, (rowid,))
         result = cursor.fetchone()
         if result:
             return result[0]
